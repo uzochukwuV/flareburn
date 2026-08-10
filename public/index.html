@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XRP → Flare Gateway · mint FXRP & act, one XRPL Payment</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">◈</span>
+        <span class="brand-name">XRP&nbsp;·&nbsp;Flare&nbsp;Gateway</span>
+      </div>
+      <div class="net-pill" id="netPill" data-network="…">
+        <span class="dot"></span><span id="netLabel">connecting…</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Mint <em>FXRP</em> and act on Flare — from a single XRP&nbsp;Payment.</h1>
+        <p class="lede">
+          No EVM wallet. No FLR. Sign one transaction in your XRPL wallet; Flare Smart
+          Accounts mint FXRP and run your chosen action atomically. If the action
+          reverts, nothing is minted.
+        </p>
+      </section>
+
+      <section class="panel" id="step-account">
+        <div class="panel-head">
+          <span class="step">1</span>
+          <h2>Your Flare smart account</h2>
+        </div>
+        <p class="hint">Every XRPL address gets a deterministic smart account on Flare.</p>
+        <div class="row">
+          <input
+            id="xrplAddress"
+            type="text"
+            placeholder="r…  (your XRPL address)"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <button id="btnAccount" class="btn">Resolve</button>
+        </div>
+        <dl id="accountResult" class="kv hidden">
+          <div><dt>Personal account</dt><dd id="paAddress">—</dd></div>
+          <div><dt>Nonce</dt><dd id="paNonce">—</dd></div>
+          <div><dt>FXRP balance</dt><dd id="paBalance">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" id="step-action">
+        <div class="panel-head">
+          <span class="step">2</span>
+          <h2>Choose your action</h2>
+        </div>
+        <div class="action-grid">
+          <label class="action-card" data-action="mint_only">
+            <input type="radio" name="action" value="mint_only" checked />
+            <span class="ac-title">Just mint FXRP</span>
+            <span class="ac-desc">Mint to your smart account. Decide later.</span>
+          </label>
+          <label class="action-card" data-action="transfer">
+            <input type="radio" name="action" value="transfer" />
+            <span class="ac-title">Mint → transfer FXRP</span>
+            <span class="ac-desc">Send minted FXRP to a Flare 0x address.</span>
+          </label>
+          <label class="action-card" data-action="redeem">
+            <input type="radio" name="action" value="redeem" />
+            <span class="ac-title">Mint → redeem to XRP</span>
+            <span class="ac-desc">Round-trip: move XRP to another r-address.</span>
+          </label>
+          <label class="action-card" data-action="redeem_with_tag">
+            <input type="radio" name="action" value="redeem_with_tag" />
+            <span class="ac-title">Mint → redeem to exchange</span>
+            <span class="ac-desc">Redeem to an XRPL address that needs a destination tag.</span>
+          </label>
+          <label class="action-card" data-action="vault_deposit">
+            <input type="radio" name="action" value="vault_deposit" />
+            <span class="ac-title">Mint → vault deposit</span>
+            <span class="ac-desc">Deposit minted FXRP into Firelight / Upshift.</span>
+          </label>
+          <label class="action-card" data-action="bridge">
+            <input type="radio" name="action" value="bridge" />
+            <span class="ac-title">Mint → bridge (OFT)</span>
+            <span class="ac-desc">Bridge minted FXRP to Base, BSC, Ethereum, HyperEVM via LayerZero.</span>
+          </label>
+        </div>
+
+        <div id="actionFields" class="action-fields"></div>
+      </section>
+
+      <section class="panel" id="step-amount">
+        <div class="panel-head">
+          <span class="step">3</span>
+          <h2>Amount &amp; quote</h2>
+        </div>
+        <div class="row">
+          <input id="amountXrp" type="text" inputmode="decimal" placeholder="XRP to send (e.g. 10)" />
+          <button id="btnQuote" class="btn btn-ghost">Quote</button>
+        </div>
+        <dl id="quoteResult" class="kv hidden">
+          <div><dt>Minting fee</dt><dd id="qMintFee">—</dd></div>
+          <div><dt>Executor fee</dt><dd id="qExecFee">—</dd></div>
+          <div><dt>You'll receive</dt><dd id="qReceive">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" id="step-prepare">
+        <div class="panel-head">
+          <span class="step">4</span>
+          <h2>Prepare your XRPL Payment</h2>
+        </div>
+        <p class="hint">
+          We generate an unsigned XRPL Payment with the action encoded in the memo.
+          You sign it in your wallet — we never see your keys.
+        </p>
+        <button id="btnPrepare" class="btn btn-primary">Prepare payment</button>
+        <div id="prepareResult" class="result hidden"></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Reference demo · Coston2 testnet by default · no keys, no signing, no custody.</span>
+      <a href="https://dev.flare.network/smart-accounts/overview" target="_blank" rel="noopener">Smart Accounts docs ↗</a>
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

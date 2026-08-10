@@ -1,0 +1,396 @@
+/* --- Cross-chain dashboard styles --- */
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dash-brand .logo-mark {
+  font-size: 2rem;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(244, 167, 66, 0.3);
+}
+
+.dash-brand h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.dash-brand .sub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0.25rem 0 0;
+}
+
+.dash-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dash-nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s;
+}
+
+.dash-nav a:hover { color: var(--accent); }
+
+.mode-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: rgba(244, 167, 66, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(244, 167, 66, 0.3);
+}
+
+.dash-main {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.search-card .search-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.search-card input {
+  flex: 1;
+}
+
+/* --- Summary card --- */
+
+.summary-top {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.total-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.total-block .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.total-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.total-sub {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.src-tag {
+  font-size: 0.6rem;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  color: var(--text-dim);
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+.action-links {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.ghost-btn {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ghost-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* --- Chain grid --- */
+
+.chain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.chain-card {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.chain-card:hover { border-color: var(--accent); }
+
+.chain-card.has-balance {
+  border-color: rgba(244, 167, 66, 0.3);
+}
+
+.chain-card.unavailable {
+  opacity: 0.4;
+}
+
+.chain-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chain-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.chain-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.chain-type {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chain-balance {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 0.5rem 0;
+}
+
+.chain-balance .unit {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.chain-supply {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.chain-error {
+  font-size: 0.8rem;
+  color: #ff6b6b;
+  margin-top: 0.5rem;
+}
+
+.chain-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.chain-actions button {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chain-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chain-actions button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* --- Bridge / redeem panels --- */
+
+.bridge-card, .redeem-card {
+  border-color: rgba(98, 127, 234, 0.2);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.panel-header h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.close-btn:hover { color: var(--accent); }
+
+.bridge-form, .redeem-form {
+  margin-top: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.field input, .field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.bridge-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fee-display {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.result-block {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.result-block .result-label {
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.result-block pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0.4rem 0;
+  line-height: 1.5;
+}
+
+.result-block .copy-btn {
+  float: right;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+}
+
+/* --- Footer --- */
+
+.dash-footer {
+  text-align: center;
+  padding: 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.dash-footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.dash-footer .disclaimer {
+  margin-top: 0.5rem;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .summary-top { gap: 1.5rem; }
+  .action-links { margin-left: 0; }
+  .form-row { flex-direction: column; }
+  .chain-grid { grid-template-columns: 1fr; }
+}

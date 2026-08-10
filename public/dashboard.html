@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FXRP Cross-Chain Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/dashboard.css" />
+  </head>
+  <body>
+    <header class="dash-header">
+      <div class="dash-brand">
+        <span class="logo-mark">◈</span>
+        <div>
+          <h1>FXRP Cross-Chain Dashboard</h1>
+          <p class="sub">Your omnichain FXRP positions — unified across Flare, Ethereum, Base, BNB Chain, HyperEVM, Monad & Katana</p>
+        </div>
+      </div>
+      <nav class="dash-nav">
+        <a href="/">&laquo; Mint Gateway</a>
+        <span class="mode-badge" id="modeBadge">mainnet</span>
+      </nav>
+    </header>
+
+    <main class="dash-main">
+      <!-- Step 1: Enter address -->
+      <section class="card search-card">
+        <label class="step-label"><span class="step-num">1</span> Enter your EVM address</label>
+        <div class="search-row">
+          <input
+            id="evmAddress"
+            type="text"
+            placeholder="0x… (your wallet address, same across all chains)"
+            spellcheck="false"
+          />
+          <button id="loadBtn">Load portfolio</button>
+        </div>
+        <p class="hint" id="searchHint">Your address is the same on every EVM chain. We query all chains in parallel.</p>
+      </section>
+
+      <!-- Summary + per-chain grid -->
+      <section class="card summary-card" id="summaryCard" hidden>
+        <div class="summary-top">
+          <div class="total-block">
+            <span class="label">Total FXRP</span>
+            <span class="total-value" id="totalFxrp">—</span>
+            <span class="total-sub" id="totalSub">across 0 chains</span>
+          </div>
+          <div class="total-block">
+            <span class="label">Chains with balance</span>
+            <span class="total-value" id="chainsWithBalance">0</span>
+          </div>
+          <div class="total-block">
+            <span class="label">XRP / USD <span class="src-tag">FTSO</span></span>
+            <span class="total-value" id="xrpPrice">—</span>
+            <span class="total-sub" id="xrpValue">—</span>
+          </div>
+          <div class="action-links">
+            <button class="ghost-btn" id="bridgeBtn">⇄ Bridge FXRP</button>
+            <button class="ghost-btn" id="redeemBtn">↩ Redeem to XRP</button>
+          </div>
+        </div>
+
+        <div class="chain-grid" id="chainGrid">
+          <!-- chain cards populated by JS -->
+        </div>
+      </section>
+
+      <!-- Bridge panel -->
+      <section class="card bridge-card" id="bridgeCard" hidden>
+        <div class="panel-header">
+          <h2>⇄ Bridge FXRP</h2>
+          <button class="close-btn" data-target="bridgeCard">&times;</button>
+        </div>
+        <p class="hint">Move FXRP from one chain to another via LayerZero OFT. No liquidity pools, no wrapping — unified supply.</p>
+        <div class="bridge-form">
+          <div class="form-row">
+            <div class="field">
+              <label>From chain</label>
+              <select id="bridgeSrc"></select>
+            </div>
+            <div class="field">
+              <label>To chain</label>
+              <select id="bridgeDst"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Amount (FXRP)</label>
+              <input id="bridgeAmount" type="text" placeholder="e.g. 100" />
+            </div>
+            <div class="field">
+              <label>Recipient (0x…)</label>
+              <input id="bridgeRecipient" type="text" placeholder="0x…" />
+            </div>
+          </div>
+          <div class="bridge-actions">
+            <button id="bridgePrepareBtn">Prepare bridge</button>
+            <span class="fee-display" id="bridgeFee"></span>
+          </div>
+        </div>
+        <div class="result-block" id="bridgeResult" hidden></div>
+      </section>
+
+      <!-- Redeem panel -->
+      <section class="card redeem-card" id="redeemCard" hidden>
+        <div class="panel-header">
+          <h2>↩ Redeem FXRP → XRP</h2>
+          <button class="close-btn" data-target="redeemCard">&times;</button>
+        </div>
+        <p class="hint">Burn FXRP on Flare and receive native XRP on the XRPL. This uses the FAssets redemption system.</p>
+        <div class="redeem-form">
+          <div class="form-row">
+            <div class="field">
+              <label>XRPL source address</label>
+              <input id="redeemXrpl" type="text" placeholder="r…" />
+            </div>
+            <div class="field">
+              <label>FXRP to redeem</label>
+              <input id="redeemAmount" type="text" placeholder="e.g. 100" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Redeem to (XRPL r-address)</label>
+              <input id="redeemToRaddr" type="text" placeholder="r…" />
+            </div>
+            <div class="field">
+              <label>Destination tag (optional)</label>
+              <input id="redeemDestTag" type="text" placeholder="exchange tag" />
+            </div>
+          </div>
+          <div class="bridge-actions">
+            <button id="redeemPrepareBtn">Prepare redeem payment</button>
+          </div>
+        </div>
+        <div class="result-block" id="redeemResult" hidden></div>
+      </section>
+    </main>
+
+    <footer class="dash-footer">
+      <p>
+        FXRP is a LayerZero OFT with unified supply. Bridge via Stargate/LayerZero.
+        <a href="https://dev.flare.network/fxrp/oft" target="_blank" rel="noopener">OFT docs ↗</a>
+        &middot;
+        <a href="https://dev.flare.network/fxrp/overview" target="_blank" rel="noopener">FXRP overview ↗</a>
+      </p>
+      <p class="disclaimer">Read-only. No keys, no signing. Prepare transactions only.</p>
+    </footer>
+
+    <script src="/dashboard.js"></script>
+  </body>
+</html>

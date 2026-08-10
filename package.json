@@ -1,0 +1,32 @@
+{
+  "name": "xrp-defi-gateway",
+  "version": "1.0.0",
+  "description": "XRP-only DeFi gateway — mint FXRP and act on Flare from a single XRPL Payment (Flare Smart Accounts + direct minting), no FLR or EVM wallet required.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch server/index.ts",
+    "start": "tsx server/index.ts",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "test:crosschain": "tsx scripts/crosschain-test.ts",
+    "executor": "tsx server/executor.ts",
+    "test:executor": "tsx scripts/executor-test.ts",
+    "test": "tsx scripts/smoke-test.ts && tsx scripts/crosschain-test.ts"
+  },
+  "dependencies": {
+    "@layerzerolabs/lz-definitions": "^3.1.7",
+    "ethers": "^6.13.4",
+    "express": "^4.21.2",
+    "viem": "^2.21.55",
+    "xrpl": "^4.2.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@flarenetwork/flare-periphery-contract-artifacts": "^0.1.52",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
