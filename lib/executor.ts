@@ -167,6 +167,66 @@ const EXECUTOR_ASSET_MANAGER_ABI = [
   "function directMintingPaymentAddress() view returns (string)",
 ] as const;
 
+/** Minimal ABI for MasterAccountController.executeInstruction (proof-based flow). */
+const MASTER_ACCOUNT_CONTROLLER_ABI = [
+  {
+    type: "function",
+    name: "executeInstruction",
+    stateMutability: "payable",
+    inputs: [
+      {
+        name: "_payment",
+        type: "tuple",
+        components: [
+          { name: "merkleProof", type: "bytes32[]" },
+          {
+            name: "data",
+            type: "tuple",
+            components: [
+              { name: "attestationType", type: "bytes32" },
+              { name: "sourceId", type: "bytes32" },
+              { name: "votingRound", type: "uint64" },
+              { name: "lowestUsedTimestamp", type: "uint64" },
+              {
+                name: "requestBody",
+                type: "tuple",
+                components: [
+                  { name: "transactionId", type: "bytes32" },
+                  { name: "proofOwner", type: "address" },
+                ],
+              },
+              {
+                name: "responseBody",
+                type: "tuple",
+                components: [
+                  { name: "blockNumber", type: "uint64" },
+                  { name: "blockTimestamp", type: "uint64" },
+                  { name: "sourceAddress", type: "string" },
+                  { name: "sourceAddressHash", type: "bytes32" },
+                  { name: "receivingAddressHash", type: "bytes32" },
+                  { name: "intendedReceivingAddressHash", type: "bytes32" },
+                  { name: "spentAmount", type: "int256" },
+                  { name: "intendedSpentAmount", type: "int256" },
+                  { name: "receivedAmount", type: "int256" },
+                  { name: "intendedReceivedAmount", type: "int256" },
+                  { name: "hasMemoData", type: "bool" },
+                  { name: "firstMemoData", type: "bytes" },
+                  { name: "hasDestinationTag", type: "bool" },
+                  { name: "destinationTag", type: "uint256" },
+                  { name: "status", type: "uint8" },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { name: "_xrplAddress", type: "string" },
+    ],
+    outputs: [],
+  },
+  "function getXrplProviderWallets() view returns (string[])",
+] as const;
+
 const REGISTRY_ABI = [
   "function getContractAddressByName(string) view returns (address)",
 ] as const;
@@ -475,6 +535,118 @@ export class Executor {
     const am = new ethers.Contract(this.assetManagerAddress, EXECUTOR_ASSET_MANAGER_ABI, this.provider);
     const [, allowedAt] = await am.directMintingDelayState(transactionId) as [bigint, bigint, bigint];
     return allowedAt;
+  }
+
+  /**
+   * Process a gasless redeem: an XRPL Payment to the operator's address carrying
+   * a 0xFF memo with a redeem-only UserOp. The executor obtains an FDC proof and
+   * calls executeInstruction on MasterAccountController — paying the Flare gas.
+   *
+   * Unlike processPayment (which targets the Core Vault → executeDirectMinting),
+   * this targets the operator address → executeInstruction.
+   */
+  async processGaslessRedeem(transactionId: string, xrplAddress: string): Promise<JournalEntry> {
+    const entry: JournalEntry = {
+      transactionId,
+      detectedAt: new Date().toISOString(),
+      sourceAddress: xrplAddress,
+      receivedAmountDrops: "0",
+      memoType: "memo_field_custom_instruction",
+      mode: "executeInstruction",
+      status: "detected",
+    };
+
+    if (this.isProcessed(transactionId)) {
+      const existing = this.journal.get(transactionId)!;
+      console.log(`[executor] ${transactionId.slice(0, 18)}… already ${existing.status}, skipping`);
+      return existing;
+    }
+
+    this.journal.set(transactionId, entry);
+    await this.saveJournal();
+
+    try {
+      const contracts = await this.resolveContracts();
+      const fdcConfig: FdcConfig = {
+        network: this.config.network,
+        verifierApiKey: this.config.verifierApiKey,
+      };
+      const proofOwner = this.config.proofOwner ?? this.executorAddress;
+
+      // Step 1: Prepare attestation request.
+      console.log(`[executor] ${transactionId.slice(0, 18)}… preparing FDC request (gasless redeem)`);
+      const abiEncodedRequest = await prepareXrpPaymentRequest(
+        fdcConfig,
+        transactionId,
+        proofOwner,
+      );
+
+      // Step 2: Calculate fee + submit attestation request.
+      const reqBytes = ethers.getBytes(abiEncodedRequest);
+      const attTypeFromReq = ethers.hexlify(reqBytes.slice(0, 32));
+      const sourceIdFromReq = ethers.hexlify(reqBytes.slice(32, 64));
+      const fee = await calculateAttestationFee(
+        this.provider,
+        contracts.fdcHub,
+        attTypeFromReq,
+        sourceIdFromReq,
+      );
+      console.log(`[executor] ${transactionId.slice(0, 18)}… attestation fee: ${ethers.formatEther(fee)} FLR`);
+
+      const { votingRoundId, txHash } = await submitAttestationRequest(
+        this.provider,
+        this.signer,
+        contracts.fdcHub,
+        abiEncodedRequest,
+        fee,
+      );
+      entry.votingRoundId = votingRoundId.toString();
+      entry.proofTxHash = txHash;
+      entry.status = "attestation_requested";
+      await this.saveJournal();
+      console.log(`[executor] ${transactionId.slice(0, 18)}… attestation submitted, round ${votingRoundId}`);
+
+      // Step 3: Wait for finalization.
+      console.log(`[executor] ${transactionId.slice(0, 18)}… waiting for round ${votingRoundId} finalization`);
+      await waitForFinalization(this.provider, contracts.relay, votingRoundId);
+
+      // Step 4: Fetch proof.
+      const proof = await fetchProof(fdcConfig, votingRoundId, abiEncodedRequest);
+      entry.status = "proof_fetched";
+      await this.saveJournal();
+      console.log(`[executor] ${transactionId.slice(0, 18)}… proof fetched`);
+
+      // Step 5: Execute instruction on MasterAccountController.
+      if (this.config.dryRun) {
+        console.log(`[executor] ${transactionId.slice(0, 18)}… DRY_RUN — skipping executeInstruction broadcast`);
+        entry.status = "executed";
+        entry.executeTxHash = "dry_run";
+        await this.saveJournal();
+        return entry;
+      }
+
+      const macAddress = await this.registry.getContractAddressByName("MasterAccountController");
+      const mac = new ethers.Contract(macAddress, MASTER_ACCOUNT_CONTROLLER_ABI, this.signer);
+      const proofTuple = proofToTuple(proof);
+
+      console.log(`[executor] ${transactionId.slice(0, 18)}… calling executeInstruction(xrpl=${xrplAddress})`);
+      const tx = await mac.executeInstruction(proofTuple, xrplAddress);
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error("executeInstruction tx produced no receipt");
+
+      entry.executeTxHash = tx.hash;
+      entry.status = "executed";
+      console.log(`[executor] ${transactionId.slice(0, 18)}… EXECUTED: ${tx.hash}`);
+      await this.saveJournal();
+      return entry;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      entry.status = "failed";
+      entry.error = msg;
+      await this.saveJournal();
+      console.error(`[executor] ${transactionId.slice(0, 18)}… FAILED: ${msg}`);
+      throw err;
+    }
   }
 
   /** Start the executor: load journal, resolve contracts, start monitoring. */

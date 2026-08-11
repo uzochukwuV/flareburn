@@ -125,6 +125,41 @@ try {
   failed++;
 }
 
+console.log("\n=== Gasless redeem payment builder ===");
+try {
+  const { prepareGaslessRedeemPayment } = await import("../lib/payment.js");
+  const { buildRedeemAmountCall } = await import("../lib/action-builders.js");
+
+  const personalAccount = "0x1234567890123456789012345678901234567890";
+  const assetManager = "0xab552A648c74d49e10027ab8A618A3aD4901c5be";
+  const calls = [buildRedeemAmountCall(assetManager, 10_000_000n, "rDest1234567890123456789")];
+  const { payment, memoHex } = prepareGaslessRedeemPayment({
+    operatorXrplAddress: "rOperator1234567890123456789",
+    senderXrplAddress: "rSender1234567890123456789",
+    personalAccount,
+    nonce: 5n,
+    calls,
+    executorFeeUba: 0n,
+  });
+
+  assert(payment.TransactionType === "Payment", "gasless payment is a Payment tx");
+  assert(payment.Amount === "1", "gasless payment is 1 drop (minimal)");
+  assert(payment.Destination === "rOperator1234567890123456789", "destination is operator address");
+  assert(payment.Memos?.length === 1, "has one memo");
+  assert(memoHex.startsWith("ff"), "memo starts with 0xFF opcode");
+
+  // Verify the memo decodes correctly.
+  const decoded = decodeMemoCustomInstruction(memoHex);
+  assert(decoded.opcode === OPCODE.MEMO_FIELD_CUSTOM_INSTRUCTION, "decoded opcode is 0xFF");
+  assert(decoded.walletId === 0, "walletId is 0");
+  assert(decoded.executorFeeUba === 0n, "executor fee is 0");
+  console.log(`  ℹ memo length: ${memoHex.length / 2} bytes`);
+} catch (e) {
+  const msg = e instanceof Error ? e.message : String(e);
+  console.error(`  ✗ Gasless redeem builder failed: ${msg}`);
+  failed++;
+}
+
 console.log(`\n${failed === 0 ? "✅ ALL PASSED" : "❌ SOME FAILED"} — ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);
 

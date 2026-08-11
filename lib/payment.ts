@@ -71,3 +71,52 @@ export function prepareMintAndActionPayment(
   };
   return { payment, memoHex, userOpHash: userOp.callData };
 }
+
+export interface PrepareGaslessRedeemInput {
+  /** Operator XRPL r-address (the payment destination for proof-based instructions). */
+  operatorXrplAddress: string;
+  /** The sender's XRPL r-address (signer of the Payment). */
+  senderXrplAddress: string;
+  /** Sender's Flare personal account (smart account) — holds the FXRP to redeem. */
+  personalAccount: string;
+  /** Current memo-instruction nonce of the personal account. */
+  nonce: bigint;
+  /** Redeem action calls (typically a single buildRedeemAmountCall or buildRedeemWithTagCall). */
+  calls: Call[];
+  /** Wallet ID assigned by the operator (0 if not registered). */
+  walletId?: number;
+  /** Executor fee in UBA (tip for the relayer that executes the instruction). */
+  executorFeeUba?: bigint;
+  /** XRPL tx fee in drops (default "12"). */
+  memosFeeDrops?: string;
+}
+
+/**
+ * Build a gasless-redeem XRPL Payment with a 0xFF memo instruction.
+ *
+ * Unlike prepareMintAndActionPayment (which sends XRP to the Core Vault to
+ * mint FXRP), this creates a 1-drop self-payment to the operator's XRPL
+ * address carrying a 0xFF memo with a redeem-only UserOp. The user needs no
+ * FLR — the executor/relayer calls executeInstruction on Flare and pays gas.
+ */
+export function prepareGaslessRedeemPayment(
+  input: PrepareGaslessRedeemInput,
+): { payment: Payment; memoHex: string; userOpHash: string } {
+  const userOp = buildPackedUserOp(input.personalAccount, input.nonce, input.calls);
+  const instr: MemoCustomInstruction = {
+    walletId: input.walletId ?? 0,
+    executorFeeUba: input.executorFeeUba ?? 0n,
+    userOp,
+  };
+  const memoHex = buildMemoCustomInstruction(instr);
+
+  const payment: Payment = {
+    TransactionType: "Payment",
+    Account: input.senderXrplAddress,
+    Destination: input.operatorXrplAddress,
+    Amount: "1", // 1 drop — minimal payment, just to carry the memo
+    Fee: input.memosFeeDrops ?? "12",
+    Memos: [{ Memo: { MemoData: memoHex } }],
+  };
+  return { payment, memoHex, userOpHash: userOp.callData };
+}

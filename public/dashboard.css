@@ -611,3 +611,68 @@
 .decode-form button {
   align-self: flex-start;
 }
+
+.gasless-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gasless-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.gasless-form input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: var(--text);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+}
+
+.gasless-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.gasless-form button {
+  align-self: flex-start;
+}
+
+.gasless-submit {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gasless-submit label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.gasless-submit input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: var(--text);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+}
+
+.gasless-submit input:focus {
+  outline: none;
+  border-color: var(--accent);
+}

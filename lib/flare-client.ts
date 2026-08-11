@@ -271,6 +271,16 @@ export class FlareClient {
     return (await mac.getExecutor(personalAccount)) as string;
   }
 
+  /** Get the operator XRPL addresses (for proof-based instructions). */
+  async getXrplProviderWallets(): Promise<string[]> {
+    const mac = await this.getContractAddress(
+      CONTRACT_NAMES.masterAccountController,
+    ).then(
+      (a) => new ethers.Contract(a, MASTER_ACCOUNT_CONTROLLER_ABI, this.provider),
+    );
+    return (await mac.getXrplProviderWallets()) as string[];
+  }
+
   /** FXRP balance held by a Flare address (e.g. a personal account). */
   async getFxrpBalance(flareAddress: string): Promise<bigint> {
     const { fxrpToken } = await this.resolveContracts();

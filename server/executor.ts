@@ -96,13 +96,35 @@ async function main() {
     }
   });
 
+  // Submit a gasless redeem: user has broadcasted a 1-drop XRPL Payment to the
+  // operator address with a 0xFF redeem memo. The executor processes it via
+  // FDC → executeInstruction on MasterAccountController.
+  app.post("/submit-gasless-redeem", async (req, res) => {
+    const { transactionId, xrplAddress } = req.body ?? {};
+    if (!transactionId || typeof transactionId !== "string") {
+      res.status(400).json({ error: "body must include { transactionId: string }" });
+      return;
+    }
+    if (!xrplAddress || typeof xrplAddress !== "string") {
+      res.status(400).json({ error: "body must include { xrplAddress: string }" });
+      return;
+    }
+    try {
+      const result = await executor.processGaslessRedeem(transactionId, xrplAddress);
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
   await executor.start();
 
   app.listen(PORT, HOST, () => {
     console.log(`\n[executor] HTTP API on http://${HOST}:${PORT}`);
     console.log(`[executor]   GET  /health  — status`);
     console.log(`[executor]   GET  /journal — processed transactions`);
-    console.log(`[executor]   POST /process — { transactionId } manual trigger\n`);
+    console.log(`[executor]   POST /process — { transactionId } manual trigger`);
+    console.log(`[executor]   POST /submit-gasless-redeem — { transactionId, xrplAddress }\n`);
   });
 
   // Graceful shutdown.

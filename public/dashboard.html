@@ -61,6 +61,7 @@
             <button class="ghost-btn" id="reservesBtn">🛡 Reserves</button>
             <button class="ghost-btn" id="executorBtn">⚙ Executor</button>
             <button class="ghost-btn" id="decodeBtn">🔍 Decode</button>
+            <button class="ghost-btn" id="gaslessBtn">⚡ Gasless Redeem</button>
           </div>
         </div>
 
@@ -237,6 +238,40 @@
           <button id="decodeMemoBtn">Decode</button>
         </div>
         <div class="result-block" id="decodeResult" hidden></div>
+      </section>
+
+      <section class="card gasless-card" id="gaslessCard" hidden>
+        <div class="panel-header">
+          <h2>⚡ Gasless Redeem</h2>
+          <button class="close-btn" data-target="gaslessCard">&times;</button>
+        </div>
+        <p class="hint">Redeem FXRP from your Flare smart account to XRP — no FLR needed. The executor relayer pays Flare gas. You sign a 1-drop XRPL Payment carrying a 0xFF redeem instruction.</p>
+        <div class="gasless-form">
+          <label>Your XRPL address (smart account owner)
+            <input type="text" id="gaslessXrplAddr" placeholder="r… (your XRPL wallet address)">
+          </label>
+          <label>FXRP amount to redeem
+            <input type="text" id="gaslessAmount" placeholder="10.5">
+          </label>
+          <label>Redeem to XRPL address
+            <input type="text" id="gaslessDestAddr" placeholder="r… (destination r-address)">
+          </label>
+          <label>Destination tag (optional, required for exchanges)
+            <input type="number" id="gaslessDestTag" placeholder="e.g. 12345">
+          </label>
+          <label>Executor fee tip in UBA (optional)
+            <input type="text" id="gaslessFee" placeholder="0">
+          </label>
+          <button id="gaslessPrepareBtn">Prepare gasless redeem</button>
+        </div>
+        <div class="result-block" id="gaslessResult" hidden></div>
+        <div class="gasless-submit" id="gaslessSubmitSection" hidden>
+          <label>After signing & broadcasting, paste the XRPL tx hash:
+            <input type="text" id="gaslessTxHash" placeholder="0x… (64 hex chars)">
+          </label>
+          <button id="gaslessSubmitBtn">Submit to executor</button>
+        </div>
+        <div class="result-block" id="gaslessSubmitResult" hidden></div>
       </section>
     </main>
 

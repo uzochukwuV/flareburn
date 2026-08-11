@@ -31,7 +31,7 @@ import {
   quoteMintFromPayment,
   xrpToDrops,
 } from "../lib/quote.js";
-import { prepareMintAndActionPayment } from "../lib/payment.js";
+import { prepareMintAndActionPayment, prepareGaslessRedeemPayment } from "../lib/payment.js";
 import {
   buildDirectMintingMemo,
   decodeMemoCustomInstruction,
@@ -703,6 +703,89 @@ app.post("/prepare-redeem", async (req: Request, res: Response) => {
   }
 });
 
+// --- gasless redemption (smart-account holders) ----------------------------
+
+const GaslessRedeemSchema = z.object({
+  xrplAddress: z.string().regex(/^r[a-zA-Z0-9]{20,40}$/, "xrplAddress must be an XRPL r-address"),
+  amountXrp: z.string().regex(/^\d+(\.\d+)?$/, "Amount must be a decimal number"),
+  destinationAddress: z.string().regex(/^r[a-zA-Z0-9]{20,40}$/, "destinationAddress must be an XRPL r-address"),
+  destinationTag: z.number().int().min(0).max(0xffffffff).optional(),
+  /** Optional executor fee tip (in FAsset UBA) for the relayer. */
+  executorFeeUba: z.string().optional(),
+});
+
+/**
+ * Prepare a gasless redeem: the user already has FXRP in their Flare personal
+ * account (smart account) and wants to redeem it to XRP without owning FLR.
+ *
+ * Returns a 1-drop XRPL Payment to the operator's address carrying a 0xFF memo
+ * with a redeem-only UserOp. The user signs this with their XRPL wallet and
+ * broadcasts it. The executor/relayer picks it up, gets an FDC proof, and calls
+ * executeInstruction on MasterAccountController — paying the Flare gas.
+ */
+app.post("/prepare-gasless-redeem", async (req: Request, res: Response) => {
+  const parsed = GaslessRedeemSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", detail: parsed.error.format() });
+    return;
+  }
+  const { xrplAddress, amountXrp, destinationAddress, destinationTag, executorFeeUba } = parsed.data;
+
+  try {
+    // Resolve the operator's XRPL address from MasterAccountController.
+    const operatorWallets = await flare.getXrplProviderWallets();
+    if (!operatorWallets || operatorWallets.length === 0) {
+      res.status(503).json({ error: "No operator XRPL address configured on-chain" });
+      return;
+    }
+    const operatorXrplAddress = operatorWallets[0];
+
+    // Resolve the user's personal account + nonce.
+    const personalAccount = await flare.getPersonalAccount(xrplAddress);
+    const nonce = await flare.getNonce(personalAccount);
+
+    // Build the redeem call(s).
+    const contracts = await ensureContracts();
+    const amountUba = xrpToDrops(amountXrp);
+
+    const calls: Call[] = destinationTag !== undefined
+      ? [buildRedeemWithTagCall(contracts.assetManager, amountUba, destinationAddress, destinationTag)]
+      : [buildRedeemAmountCall(contracts.assetManager, amountUba, destinationAddress)];
+
+    const feeUba = executorFeeUba ? BigInt(executorFeeUba) : 0n;
+
+    const { payment, memoHex, userOpHash } = prepareGaslessRedeemPayment({
+      operatorXrplAddress,
+      senderXrplAddress: xrplAddress,
+      personalAccount,
+      nonce,
+      calls,
+      executorFeeUba: feeUba,
+    });
+
+    res.json({
+      payment,
+      memoHex,
+      userOpCallDataHash: userOpHash,
+      personalAccount,
+      nonce: nonce.toString(),
+      operatorXrplAddress,
+      amountXrp,
+      destinationAddress,
+      destinationTag,
+      executorFeeUba: feeUba.toString(),
+      assetManager: contracts.assetManager,
+      note:
+        "Sign this 1-drop XRPL Payment with your XRPL wallet and broadcast it. " +
+        "The executor relayer detects it, obtains an FDC proof, and calls " +
+        "executeInstruction on MasterAccountController to execute the redeem. " +
+        "You need no FLR — the relayer pays Flare gas.",
+    });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
 // --- proof of reserves -----------------------------------------------------
 
 app.get("/reserves", async (_req: Request, res: Response) => {
@@ -744,6 +827,25 @@ app.get("/executor-status", async (_req: Request, res: Response) => {
     res.json({ online: true, ...health, journal });
   } catch {
     res.json({ online: false, error: "executor not reachable" });
+  }
+});
+
+/** Proxy: forward a gasless redeem submission to the executor. */
+app.post("/submit-gasless-redeem", async (req: Request, res: Response) => {
+  try {
+    const r = await fetch(`${EXECUTOR_URL}/submit-gasless-redeem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+    const data = await r.json() as any;
+    if (!r.ok) {
+      res.status(r.status).json(data);
+      return;
+    }
+    res.json(data);
+  } catch {
+    res.status(503).json({ error: "executor not reachable — start it with: npm run executor" });
   }
 });
 

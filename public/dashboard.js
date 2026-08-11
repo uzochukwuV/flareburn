@@ -70,6 +70,9 @@ async function init() {
   $("executorRefreshBtn").addEventListener("click", loadExecutorStatus);
   $("decodeBtn").addEventListener("click", () => togglePanel("decodeCard"));
   $("decodeMemoBtn").addEventListener("click", decodeMemo);
+  $("gaslessBtn").addEventListener("click", () => togglePanel("gaslessCard"));
+  $("gaslessPrepareBtn").addEventListener("click", prepareGaslessRedeem);
+  $("gaslessSubmitBtn").addEventListener("click", submitGaslessRedeem);
   $("redeemExchange").addEventListener("change", onExchangeChange);
   document.querySelectorAll('input[name="redeemMode"]').forEach((r) => {
     r.addEventListener("change", onRedeemModeChange);
@@ -553,6 +556,91 @@ async function decodeMemo() {
     showResult("decodeResult", "Error", e.message);
   } finally {
     $("decodeMemoBtn").disabled = false;
+  }
+}
+
+// --- Gasless redeem (smart-account holders) ---
+
+async function prepareGaslessRedeem() {
+  const xrplAddress = $("gaslessXrplAddr").value.trim();
+  const amountXrp = $("gaslessAmount").value.trim();
+  const destinationAddress = $("gaslessDestAddr").value.trim();
+  const destinationTagRaw = $("gaslessDestTag").value.trim();
+  const executorFeeUba = $("gaslessFee").value.trim() || "0";
+
+  if (!xrplAddress || !amountXrp || !destinationAddress) {
+    showResult("gaslessResult", "Error", "Fill in XRPL address, amount, and destination.");
+    return;
+  }
+
+  const body = { xrplAddress, amountXrp, destinationAddress, executorFeeUba };
+  if (destinationTagRaw) body.destinationTag = Number(destinationTagRaw);
+
+  $("gaslessPrepareBtn").disabled = true;
+  try {
+    const res = await fetch("/prepare-gasless-redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    showResult("gaslessResult", "Gasless redeem prepared", `
+      <div><strong>Personal account:</strong> ${data.personalAccount}</div>
+      <div><strong>Nonce:</strong> ${data.nonce}</div>
+      <div><strong>Operator XRPL address:</strong> ${data.operatorXrplAddress}</div>
+      <div><strong>Amount:</strong> ${data.amountXrp} XRP → ${data.destinationAddress}${data.destinationTag ? ` (tag ${data.destinationTag})` : ""}</div>
+      <div><strong>Executor fee:</strong> ${data.executorFeeUba} UBA</div>
+      <div><strong>AssetManager:</strong> ${data.assetManager}</div>
+      <div class="result-label" style="margin-top:0.5rem">Instructions</div>
+      <div>${data.note}</div>
+      <div class="result-label" style="margin-top:0.5rem">Memo hex (0xFF instruction)</div>
+      <pre>${data.memoHex}</pre>
+      <div class="result-label" style="margin-top:0.5rem">XRPL Payment (sign this with your XRPL wallet)</div>
+      <pre>${JSON.stringify(data.payment, null, 2)}</pre>
+    `);
+
+    $("gaslessSubmitSection").hidden = false;
+  } catch (e) {
+    showResult("gaslessResult", "Error", e.message);
+  } finally {
+    $("gaslessPrepareBtn").disabled = false;
+  }
+}
+
+async function submitGaslessRedeem() {
+  const transactionId = $("gaslessTxHash").value.trim();
+  const xrplAddress = $("gaslessXrplAddr").value.trim();
+
+  if (!transactionId || !xrplAddress) {
+    showResult("gaslessSubmitResult", "Error", "Paste the XRPL tx hash and ensure your XRPL address is filled in above.");
+    return;
+  }
+
+  $("gaslessSubmitBtn").disabled = true;
+  try {
+    const res = await fetch("/submit-gasless-redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionId, xrplAddress }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    showResult("gaslessSubmitResult", "Submitted to executor", `
+      <div><strong>Status:</strong> ${data.status}</div>
+      <div><strong>Transaction ID:</strong> ${data.transactionId}</div>
+      ${data.proofTxHash ? `<div><strong>FDC attestation tx:</strong> ${data.proofTxHash}</div>` : ""}
+      ${data.votingRoundId ? `<div><strong>Voting round:</strong> ${data.votingRoundId}</div>` : ""}
+      ${data.executeTxHash ? `<div><strong>Execute tx:</strong> ${data.executeTxHash}</div>` : ""}
+      ${data.error ? `<div><strong>Error:</strong> ${data.error}</div>` : ""}
+      <div class="result-label" style="margin-top:0.5rem">The executor will obtain an FDC proof and call executeInstruction on MasterAccountController. Check the journal for updates.</div>
+    `);
+  } catch (e) {
+    showResult("gaslessSubmitResult", "Error", e.message);
+  } finally {
+    $("gaslessSubmitBtn").disabled = false;
   }
 }
 
