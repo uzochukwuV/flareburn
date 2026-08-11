@@ -137,7 +137,7 @@ export function parseCoreVaultPayment(
   const destination = txData.Destination;
   if (!destination || destination !== coreVaultAddress) return null;
 
-  const amount = txData.Amount;
+  const amount = txData.Amount ?? txData.DeliverMax;
   if (typeof amount !== "string") return null; // only handle native XRP (drops string)
 
   const memos = txData.Memos ?? [];
