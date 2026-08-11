@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "app": "tsx watch app.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch server/index.ts",
     "start": "tsx server/index.ts",

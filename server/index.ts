@@ -706,7 +706,4 @@ app.get("/reserves", async (_req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`XRP-only DeFi gateway on http://${HOST}:${PORT} (network: ${NETWORK})`);
-  console.log(`  Cross-chain dashboard: http://${HOST}:${PORT}/dashboard.html (mode: ${USE_TESTNET ? "testnet" : "mainnet"})`);
-});
+export {app};
