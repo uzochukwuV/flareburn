@@ -18,6 +18,6 @@
     "noUnusedParameters": false,
     "verbatimModuleSyntax": false
   },
-  "include": ["server/**/*.ts", "lib/**/*.ts", "scripts/**/*.ts"],
+  "include": ["app.ts", "server/**/*.ts", "lib/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist", "public"]
 }
