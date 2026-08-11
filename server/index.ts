@@ -549,6 +549,7 @@ app.post("/bridge-prepare", async (req: Request, res: Response) => {
       srcChain: { id: src.id, name: src.name, lzEid: src.lzEid },
       dstChain: { id: dst.id, name: dst.name, lzEid: dst.lzEid },
       amount,
+      recipient,
       quote: {
         nativeFee: callData.quote.nativeFee,
         lzTokenFee: callData.quote.lzTokenFee,
@@ -648,6 +649,10 @@ app.post("/prepare-redeem", async (req: Request, res: Response) => {
     const contracts = await ensureContracts();
     const amountUba = xrpToDrops(amountXrp);
 
+    // Use the caller's address as executor if provided, otherwise zero address
+    // (the AssetManager will use the default agent/executor).
+    const executor = callerAddress ?? ethers.ZeroAddress;
+
     let call: { to: string; data: string; value: string };
     let functionSig: string;
 
@@ -657,6 +662,7 @@ app.post("/prepare-redeem", async (req: Request, res: Response) => {
         amountUba,
         redeemerXrplAddress,
         destinationTag,
+        executor,
       );
       call = { to: c.target, data: c.data, value: c.value.toString() };
       functionSig = "redeemWithTag(uint256,string,address,uint32)";
@@ -665,6 +671,7 @@ app.post("/prepare-redeem", async (req: Request, res: Response) => {
         contracts.assetManager,
         amountUba,
         redeemerXrplAddress,
+        executor,
       );
       call = { to: c.target, data: c.data, value: c.value.toString() };
       functionSig = "redeemAmount(uint256,string,address)";
@@ -684,6 +691,7 @@ app.post("/prepare-redeem", async (req: Request, res: Response) => {
         : null,
       warnings,
       callerAddress: callerAddress ?? null,
+      executor,
       assetManager: contracts.assetManager,
       note:
         "Sign this calldata on Flare (in your EVM wallet or smart account). " +
@@ -705,5 +713,47 @@ app.get("/reserves", async (_req: Request, res: Response) => {
     res.status(502).json({ error: (err as Error).message });
   }
 });
+
+// --- executor status proxy --------------------------------------------------
+
+/** Executor HTTP API base URL. The executor runs on a separate port (default 12001). */
+const EXECUTOR_URL = process.env.EXECUTOR_URL ?? `http://127.0.0.1:${Number(process.env.EXECUTOR_PORT ?? 12001)}`;
+
+app.get("/executor-status", async (_req: Request, res: Response) => {
+  try {
+    const healthRes = await fetch(`${EXECUTOR_URL}/health`);
+    if (!healthRes.ok) {
+      res.json({ online: false, error: `executor returned ${healthRes.status}` });
+      return;
+    }
+    const health = await healthRes.json() as any;
+
+    // Try to fetch journal summary (non-fatal if it fails)
+    let journal: { count: number; recent: any[] } | null = null;
+    try {
+      const jr = await fetch(`${EXECUTOR_URL}/journal`);
+      if (jr.ok) {
+        const jd = await jr.json() as any;
+        journal = {
+          count: jd.count ?? 0,
+          recent: (jd.entries ?? []).slice(-5).reverse(),
+        };
+      }
+    } catch { /* executor journal not available */ }
+
+    res.json({ online: true, ...health, journal });
+  } catch {
+    res.json({ online: false, error: "executor not reachable" });
+  }
+});
+
+// --- start (local dev only; Vercel uses app.ts which exports the app) -------
+
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, HOST, () => {
+    console.log(`XRP-only DeFi gateway on http://${HOST}:${PORT} (network: ${NETWORK})`);
+    console.log(`  Cross-chain dashboard: http://${HOST}:${PORT}/dashboard.html (mode: ${USE_TESTNET ? "testnet" : "mainnet"})`);
+  });
+}
 
 export {app};

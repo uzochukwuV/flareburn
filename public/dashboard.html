@@ -59,6 +59,8 @@
             <button class="ghost-btn" id="bridgeBtn">⇄ Bridge FXRP</button>
             <button class="ghost-btn" id="redeemBtn">↩ Redeem to XRP</button>
             <button class="ghost-btn" id="reservesBtn">🛡 Reserves</button>
+            <button class="ghost-btn" id="executorBtn">⚙ Executor</button>
+            <button class="ghost-btn" id="decodeBtn">🔍 Decode</button>
           </div>
         </div>
 
@@ -201,6 +203,40 @@
           <button id="reservesRefreshBtn" class="ghost-btn">Refresh</button>
           <span class="fee-display" id="reservesTimestamp"></span>
         </div>
+      </section>
+      <!-- Executor status card -->
+      <section class="card executor-card" id="executorCard" hidden>
+        <div class="panel-header">
+          <h2>⚙ Executor Service</h2>
+          <button class="close-btn" data-target="executorCard">&times;</button>
+        </div>
+        <p class="hint">The executor monitors the XRPL Core Vault, finalizes mints on Flare via FDC attestations, and processes redemptions. It runs on a separate process.</p>
+        <div class="executor-status" id="executorStatus">
+          <span class="status-dot" id="executorDot"></span>
+          <span id="executorStatusText">Checking…</span>
+        </div>
+        <div class="executor-details" id="executorDetails" hidden></div>
+        <div class="executor-journal" id="executorJournal" hidden>
+          <div class="result-label" style="margin-bottom:0.5rem">Recent journal entries</div>
+          <div id="executorJournalList"></div>
+        </div>
+        <div class="reserves-refresh">
+          <button id="executorRefreshBtn" class="ghost-btn">Refresh</button>
+        </div>
+      </section>
+
+      <!-- Decode memo tool card -->
+      <section class="card decode-card" id="decodeCard" hidden>
+        <div class="panel-header">
+          <h2>🔍 Decode Memo</h2>
+          <button class="close-btn" data-target="decodeCard">&times;</button>
+        </div>
+        <p class="hint">Paste a 0xFF custom-instruction memo hex to decode it into its smart-account UserOp fields. Useful for verifying transactions before signing.</p>
+        <div class="decode-form">
+          <textarea id="decodeMemoInput" placeholder="0xff0000…" rows="3"></textarea>
+          <button id="decodeMemoBtn">Decode</button>
+        </div>
+        <div class="result-block" id="decodeResult" hidden></div>
       </section>
     </main>
 

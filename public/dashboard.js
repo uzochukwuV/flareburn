@@ -66,6 +66,10 @@ async function init() {
   $("bridgePrepareBtn").addEventListener("click", prepareBridge);
   $("redeemPrepareBtn").addEventListener("click", prepareRedeem);
   $("reservesRefreshBtn").addEventListener("click", loadReserves);
+  $("executorBtn").addEventListener("click", () => { togglePanel("executorCard"); loadExecutorStatus(); });
+  $("executorRefreshBtn").addEventListener("click", loadExecutorStatus);
+  $("decodeBtn").addEventListener("click", () => togglePanel("decodeCard"));
+  $("decodeMemoBtn").addEventListener("click", decodeMemo);
   $("redeemExchange").addEventListener("change", onExchangeChange);
   document.querySelectorAll('input[name="redeemMode"]').forEach((r) => {
     r.addEventListener("change", onRedeemModeChange);
@@ -338,6 +342,7 @@ async function prepareRedeem() {
         <div><strong>Amount:</strong> ${data.amountXrp} FXRP (${data.amountUba} UBA)</div>
         <div><strong>Destination:</strong> ${data.redeemerXrplAddress}</div>
         ${data.destinationTag !== null && data.destinationTag !== undefined ? `<div><strong>Destination tag:</strong> ${data.destinationTag}</div>` : ""}
+        ${data.executor && data.executor !== "0x0000000000000000000000000000000000000000" ? `<div><strong>Executor:</strong> ${data.executor}</div>` : ""}
         ${exchInfo}
         ${warningsHtml}
         <div class="result-label" style="margin-top:0.5rem">Calldata (sign on Flare)</div>
@@ -454,6 +459,100 @@ async function loadReserves() {
     $("reservesTimestamp").textContent = `Error: ${e.message}`;
   } finally {
     $("reservesRefreshBtn").disabled = false;
+  }
+}
+
+// --- Executor status ---
+
+async function loadExecutorStatus() {
+  const dot = $("executorDot");
+  const statusText = $("executorStatusText");
+  const details = $("executorDetails");
+  const journalEl = $("executorJournal");
+  const journalList = $("executorJournalList");
+
+  dot.className = "status-dot checking";
+  statusText.textContent = "Checking executor…";
+  details.hidden = true;
+  journalEl.hidden = true;
+
+  try {
+    const res = await fetch("/executor-status");
+    const data = await res.json();
+
+    if (data.online) {
+      dot.className = "status-dot online";
+      statusText.textContent = `Online — ${data.dryRun ? "dry-run mode" : "live mode"}`;
+      details.hidden = false;
+      details.innerHTML = `
+        <div><strong>Executor address:</strong> ${data.executor ?? "—"}</div>
+        <div><strong>Network:</strong> ${data.network ?? "—"}</div>
+        <div><strong>Dry run:</strong> ${data.dryRun ?? "—"}</div>
+        <div><strong>Core Vault:</strong> ${(data.coreVault ?? "—").slice(0, 16)}…</div>
+      `;
+
+      if (data.journal) {
+        journalEl.hidden = false;
+        if (data.journal.count === 0) {
+          journalList.innerHTML = '<div class="hint">No transactions processed yet.</div>';
+        } else {
+          journalList.innerHTML = "";
+          for (const e of data.journal.recent) {
+            journalList.innerHTML += `
+              <div class="reserve-chain-row">
+                <span class="chain-name-sm">${e.xrplTxHash?.slice(0, 16) ?? e.transactionId?.slice(0, 16) ?? "—"}…</span>
+                <span class="chain-supply-sm">${e.status ?? e.state ?? "—"}</span>
+              </div>
+            `;
+          }
+          journalList.innerHTML += `<div class="hint" style="margin-top:0.5rem">Total: ${data.journal.count} entries</div>`;
+        }
+      }
+    } else {
+      dot.className = "status-dot offline";
+      statusText.textContent = "Offline — executor not running";
+      details.hidden = false;
+      details.innerHTML = `<div class="hint">Start it with: <code>npm run executor</code></div>`;
+    }
+  } catch (e) {
+    dot.className = "status-dot offline";
+    statusText.textContent = "Offline — unreachable";
+    details.hidden = false;
+    details.innerHTML = `<div class="hint">Error: ${e.message}</div>`;
+  }
+}
+
+// --- Decode memo ---
+
+async function decodeMemo() {
+  const memoHex = $("decodeMemoInput").value.trim();
+  if (!memoHex) {
+    showResult("decodeResult", "Error", "Paste a memo hex string.");
+    return;
+  }
+
+  $("decodeMemoBtn").disabled = true;
+  try {
+    const res = await fetch("/decode-memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memoHex }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    showResult("decodeResult", "Decoded memo", `
+      <div><strong>Opcode:</strong> ${data.opcode}</div>
+      <div><strong>Wallet ID:</strong> ${data.walletId}</div>
+      <div><strong>Executor fee:</strong> ${data.executorFeeUba} UBA</div>
+      <div><strong>UserOp encoded length:</strong> ${data.userOpEncodedLengthBytes} bytes</div>
+      <div class="result-label" style="margin-top:0.5rem">UserOp (hex)</div>
+      <pre>${data.userOpEncoded}</pre>
+    `);
+  } catch (e) {
+    showResult("decodeResult", "Error", e.message);
+  } finally {
+    $("decodeMemoBtn").disabled = false;
   }
 }
 

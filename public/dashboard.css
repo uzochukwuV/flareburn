@@ -532,3 +532,82 @@
   gap: 1rem;
   margin-top: 0.5rem;
 }
+
+/* --- Executor status card --- */
+
+.executor-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online { background: #4ade80; box-shadow: 0 0 8px rgba(74, 222, 128, 0.5); }
+.status-dot.offline { background: #f87171; }
+.status-dot.checking { background: #fbbf24; animation: pulse 1s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.executor-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.825rem;
+}
+
+.executor-details code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.executor-journal {
+  margin-top: 1rem;
+}
+
+/* --- Decode memo card --- */
+
+.decode-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.decode-form textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.decode-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.decode-form button {
+  align-self: flex-start;
+}
