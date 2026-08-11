@@ -9,6 +9,44 @@ Location: `.agents/skills/`
 - `flare-fcc-skill` â€” Flare Confidential Compute (TEE)
 - `flare-general-skill` â€” General Flare knowledge, networks, tooling
 
+
+## FDC Attestation Flow (VERIFIED Ñ commit 1e7d415)
+End-to-end FXRP mint via FDC attestation is WORKING on Coston2:
+1. Prepare XRPPayment FDC request (attestationType="XRPPayment" bytes32, sourceId="testXRP" bytes32)
+2. Calculate attestation fee via `FdcRequestFeeConfigurations` contract (NOT FdcHub Ñ it reverts)
+3. Submit attestation to `FdcHub.requestAttestation` (costs 1 wei on Coston2)
+4. Calculate voting round: `(blockTimestamp - firstVotingRoundStartTs) / 90`
+   - **firstVotingRoundStartTs = 1658430000** (read from FlareSystemsManager via ContractRegistry)
+   - **CRITICAL**: Must subtract firstVotingRoundStartTs! `blockTs / 90` gives WRONG round IDs
+5. Wait for finalization via `Relay.isFinalized(votingRoundId, 200)` (FDC protocol ID = 200)
+6. Fetch proof from DA Layer: `POST {daLayerUrl}/api/v1/fdc/proof-by-request-round-raw`
+   - DA Layer URL (Coston2): `https://ctn2-data-availability.flare.network`
+   - API key: `00000000-0000-0000-0000-000000000000` (default verifier key)
+   - Body: `{ votingRoundId, requestBytes }`
+   - **Retry needed**: DA Layer lags ~10-20s behind on-chain finalization
+7. Decode proof: response is `{ response_hex, attestation_type, proof }`
+   - `response_hex` is ABI-encoded full attestation tuple (decode with AbiCoder)
+   - `proof` is the Merkle proof array (bytes32[])
+   - `attestation_type` is bytes32 "XRPPayment"
+8. Call `AssetManager.executeDirectMinting(proofTuple)` Ñ mints FXRP to recipient
+
+### DA Layer Response Format (CRITICAL)
+The DA Layer returns `{ response_hex, attestation_type, proof }`, NOT `{ merkleProof, data }`.
+`response_hex` decodes as: `tuple(bytes32 attestationType, bytes32 sourceId, uint64 votingRound,
+uint64 lowestUsedTimestamp, tuple(bytes32, address) requestBody,
+tuple(uint64, uint64, string, bytes32, bytes32, bytes32, int256, int256, int256, int256,
+bool, bytes, bool, uint256, uint8) responseBody)`
+
+### Contract Addresses (Coston2)
+- FlareContractsRegistry: `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`
+- FdcHub: `0x48aC463d7975828989331F4De43341627b9c5f1D`
+- Relay: `0xa10B672D1c62e5457b17af63d4302add6A99d7dE`
+- AssetManagerFXRP: `0xc1Ca88b937d0b528842F95d5731ffB586f4fbDFA`
+- FXRP token (FTestXRP): `0x0b6A3645c240605887a5532109323A3E12273dc7` (decimals=6)
+
+### Common executeDirectMinting Revert Errors
+- `0x18dce79f` = `PaymentAlreadyConfirmed()` Ñ XRPL tx already used for a mint
+
 ## Key Technical Facts (FAssets / FXRP / XRP)
 - **FAssets**: trustless over-collateralized bridge XRPL/BTC/DOGE â†’ Flare ERC-20 (FXRP, FBTC, FDOGE)
 - **FXRP**: ERC-20 representation of XRP on Flare; also deployed as LayerZero OFT (HyperEVM, HyperCore, Ethereum, Base, BSC, Monad, Katana)
@@ -204,3 +242,37 @@ Use FDC ConfirmedBlockHeightExists attestations to cryptographically prove the X
 - npm run test:executor - 61 tests (memo routing, FDC proofs, contract resolution)
 - npm run test:exchange - 40 tests (exchange registry, redeem calldata, proof-of-reserves)
 - npm run test - runs smoke + crosschain + exchange (111 tests)
+
+## FDC Attestation Flow (VERIFIED - commit 1e7d415)
+End-to-end FXRP mint via FDC attestation is WORKING on Coston2:
+1. Prepare XRPPayment FDC request (attestationType=XRPPayment bytes32, sourceId=testXRP bytes32)
+2. Calculate attestation fee via FdcRequestFeeConfigurations contract (NOT FdcHub - it reverts)
+3. Submit attestation to FdcHub.requestAttestation (costs 1 wei on Coston2)
+4. Calculate voting round: (blockTimestamp - firstVotingRoundStartTs) / 90
+   - firstVotingRoundStartTs = 1658430000 (read from FlareSystemsManager via ContractRegistry)
+   - CRITICAL: Must subtract firstVotingRoundStartTs! blockTs / 90 gives WRONG round IDs
+5. Wait for finalization via Relay.isFinalized(votingRoundId, 200) (FDC protocol ID = 200)
+6. Fetch proof from DA Layer: POST {daLayerUrl}/api/v1/fdc/proof-by-request-round-raw
+   - DA Layer URL (Coston2): https://ctn2-data-availability.flare.network
+   - API key: 00000000-0000-0000-0000-000000000000 (default verifier key)
+   - Body: { votingRoundId, requestBytes }
+   - Retry needed: DA Layer lags ~10-20s behind on-chain finalization
+7. Decode proof: response is { response_hex, attestation_type, proof }
+   - response_hex is ABI-encoded full attestation tuple (decode with AbiCoder)
+   - proof is the Merkle proof array (bytes32[])
+   - attestation_type is bytes32 XRPPayment
+8. Call AssetManager.executeDirectMinting(proofTuple) - mints FXRP to recipient
+
+### DA Layer Response Format (CRITICAL)
+The DA Layer returns { response_hex, attestation_type, proof }, NOT { merkleProof, data }.
+
+### Contract Addresses (Coston2)
+- FlareContractsRegistry: 0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
+- FdcHub: 0x48aC463d7975828989331F4De43341627b9c5f1D
+- Relay: 0xa10B672D1c62e5457b17af63d4302add6A99d7dE
+- AssetManagerFXRP: 0xc1Ca88b937d0b528842F95d5731ffB586f4fbDFA
+- FXRP token (FTestXRP): 0x0b6A3645c240605887a5532109323A3E12273dc7 (decimals=6)
+
+### Common executeDirectMinting Revert Errors
+- 0x18dce79f = PaymentAlreadyConfirmed() - XRPL tx already used for a mint
+
