@@ -302,3 +302,42 @@ scripts/
 ## License
 
 MIT
+XRPL Payment successful! ✅
+
+TX Hash: 363FE10EA5AA2F0ED31E053DF9D7B4F572F5EF5B85AFA48709C7DC9C7048035E
+Status: tesSUCCESS
+8 XRP sent to Core Vault with the minting memo
+Step 3: Run the executor to finalize the mint on Flare
+
+The verifier API works! 🎉 It returned status: VALID and the abiEncodedRequest. Now I need to fix the prepareXrpPaymentRequest function with the correct:
+
+API key header: x-api-key instead of X-apikey
+attestationType: must be the bytes32-encoded string "XRPPayment" (not 0x08)
+sourceId: must be the bytes32-encoded string (not just testXRP)
+
+Found the bug! The firstVotingRoundStartTs is 1658430000, NOT 0! Our round calculation was wrong:
+
+roundId = (blockTimestamp - firstVotingRoundStartTs) / votingEpochDurationSeconds
+        = (1786422549 - 1658430000) / 90
+        = 127992549 / 90
+        = 1422139  (NOT 19849139!)
+We were calculating round IDs as blockTimestamp / 90 but should be (blockTimestamp - 1658430000) / 90. The attestation was submitted to the wrong voting round! Let me verify:
+
+Verify correct voting round with firstVotingRoundStartTs
+
+FOUND THE BUG! The voting round calculation was completely wrong because we didn't subtract firstVotingRoundStartTs (1658430000).
+
+Wrong: roundId = blockTimestamp / 90 → 19849139
+Correct: roundId = (blockTimestamp - 1658430000) / 90 → 1422139
+
+
+The entire FDC attestation → proof → direct minting flow is working end-to-end:
+
+TX Status: ✅ SUCCESS (block 33906115)
+Token: FXRP (FTestXRP) at 0x0b6A3645c240605887a5532109323A3E12273dc7
+Recipient balance: 10.4 FTestXRP (0.4 from this mint + 10 from previous mints)
+Transfer events:
+0.3 FTestXRP minted to recipient (0x0a6E...eba6)
+0.1 FTestXRP minted to recipient (executor fee)
+0.1 FTestXRP to fee receiver
+Now let me update the ta
