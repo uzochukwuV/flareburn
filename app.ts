@@ -1,5 +1,7 @@
 import {app} from "./server/index"
 import { type NetworkName } from "./lib/flare-client.js";
+import express, { type Request, type Response } from "express";
+
 
 const HOST = process.env.HOST ?? "0.0.0.0";
 const PORT = Number(process.env.PORT ?? 3001);
