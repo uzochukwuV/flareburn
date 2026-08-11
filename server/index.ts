@@ -37,6 +37,15 @@ import {
   decodeMemoCustomInstruction,
   type Call,
 } from "../lib/memo-builder.js";
+import {
+  getExchanges,
+  getExchange,
+  getExchangeByAddress,
+  validateRedemption,
+  isValidXrplAddress,
+  type ExchangeInfo,
+} from "../lib/exchange-registry.js";
+import { computeProofOfReserves } from "../lib/proof-of-reserves.js";
 
 const HOST = process.env.HOST ?? "0.0.0.0";
 const PORT = Number(process.env.PORT ?? 12000);
@@ -550,6 +559,148 @@ app.post("/bridge-prepare", async (req: Request, res: Response) => {
       ],
       note: "Sign these calls on the source chain. The OFT adapter/native OFT handles the LayerZero messaging. Native fee covers LZ gas.",
     });
+  } catch (err) {
+    res.status(502).json({ error: (err as Error).message });
+  }
+});
+
+// --- exchange registry + standalone redemption ----------------------------
+
+app.get("/exchanges", (_req: Request, res: Response) => {
+  const exchanges = getExchanges(true);
+  res.json({
+    count: exchanges.length,
+    exchanges: exchanges.map((e) => ({
+      id: e.id,
+      name: e.name,
+      depositAddress: e.depositAddress,
+      requiresTag: e.requiresTag,
+      minDepositXrp: e.minDepositXrp,
+      depositUrl: e.depositUrl,
+      color: e.color,
+      initials: e.initials,
+    })),
+  });
+});
+
+const PrepareRedeemSchema = z.object({
+  amountXrp: z.string().regex(/^\d+(\.\d+)?$/, "Amount must be a decimal number"),
+  // Either exchangeId (lookup from registry) or a raw r-address:
+  exchangeId: z.string().optional(),
+  redeemerXrplAddress: z.string().optional(),
+  destinationTag: z.number().int().min(0).max(0xffffffff).optional(),
+  // The EVM address that will call redeemWithTag (the smart account or wallet):
+  callerAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "callerAddress must be a 0x address").optional(),
+});
+
+/**
+ * Standalone redemption — burn existing FXRP and receive XRP at an XRPL address.
+ * Unlike /prepare-payment (which mints + redeems atomically via 0xFF memo), this
+ * endpoint returns the raw EVM calldata for `redeemWithTag` / `redeemAmount`,
+ * suitable for signing in an EVM wallet or smart account.
+ *
+ * Use cases:
+ *   - User already holds FXRP (from a previous mint, transfer, or bridge)
+ *   - User wants to cash out directly to an exchange deposit address
+ *   - No mint involved — just redeem existing FXRP
+ */
+app.post("/prepare-redeem", async (req: Request, res: Response) => {
+  const parsed = PrepareRedeemSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", detail: parsed.error.format() });
+    return;
+  }
+  const { amountXrp, exchangeId, destinationTag, callerAddress } = parsed.data;
+  let { redeemerXrplAddress } = parsed.data;
+
+  // Resolve exchange (if exchangeId provided)
+  let exchange: ExchangeInfo | undefined;
+  if (exchangeId) {
+    exchange = getExchange(exchangeId);
+    if (!exchange) {
+      res.status(400).json({ error: `Unknown exchange: ${exchangeId}` });
+      return;
+    }
+    redeemerXrplAddress = exchange.depositAddress;
+  }
+
+  // Look up exchange by address if a known deposit address is provided directly
+  if (!exchange && redeemerXrplAddress) {
+    exchange = getExchangeByAddress(redeemerXrplAddress);
+  }
+
+  // Validate the r-address
+  if (!redeemerXrplAddress || !isValidXrplAddress(redeemerXrplAddress)) {
+    res.status(400).json({
+      error: "Provide either exchangeId or a valid XRPL r-address (redeemerXrplAddress)",
+    });
+    return;
+  }
+
+  // Validate against exchange registry (warnings + errors)
+  const { warnings, errors } = validateRedemption(exchange, amountXrp, destinationTag);
+  if (errors.length > 0) {
+    res.status(400).json({ error: errors.join("; "), warnings });
+    return;
+  }
+
+  try {
+    const contracts = await ensureContracts();
+    const amountUba = xrpToDrops(amountXrp);
+
+    let call: { to: string; data: string; value: string };
+    let functionSig: string;
+
+    if (destinationTag !== undefined) {
+      const c = buildRedeemWithTagCall(
+        contracts.assetManager,
+        amountUba,
+        redeemerXrplAddress,
+        destinationTag,
+      );
+      call = { to: c.target, data: c.data, value: c.value.toString() };
+      functionSig = "redeemWithTag(uint256,string,address,uint32)";
+    } else {
+      const c = buildRedeemAmountCall(
+        contracts.assetManager,
+        amountUba,
+        redeemerXrplAddress,
+      );
+      call = { to: c.target, data: c.data, value: c.value.toString() };
+      functionSig = "redeemAmount(uint256,string,address)";
+    }
+
+    res.json({
+      function: functionSig,
+      to: call.to,
+      data: call.data,
+      value: call.value,
+      amountXrp,
+      amountUba: amountUba.toString(),
+      redeemerXrplAddress,
+      destinationTag,
+      exchange: exchange
+        ? { id: exchange.id, name: exchange.name, depositUrl: exchange.depositUrl }
+        : null,
+      warnings,
+      callerAddress: callerAddress ?? null,
+      assetManager: contracts.assetManager,
+      note:
+        "Sign this calldata on Flare (in your EVM wallet or smart account). " +
+        "The AssetManager burns FXRP and the agent sends XRP to the specified XRPL address. " +
+        "Redemption enters a queue — the agent typically processes within minutes to hours.",
+    });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+// --- proof of reserves -----------------------------------------------------
+
+app.get("/reserves", async (_req: Request, res: Response) => {
+  try {
+    const data = await computeProofOfReserves(flare, USE_TESTNET);
+    res.json(data);
   } catch (err) {
     res.status(502).json({ error: (err as Error).message });
   }

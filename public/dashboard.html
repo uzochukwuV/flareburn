@@ -58,6 +58,7 @@
           <div class="action-links">
             <button class="ghost-btn" id="bridgeBtn">⇄ Bridge FXRP</button>
             <button class="ghost-btn" id="redeemBtn">↩ Redeem to XRP</button>
+            <button class="ghost-btn" id="reservesBtn">🛡 Reserves</button>
           </div>
         </div>
 
@@ -108,33 +109,98 @@
           <h2>↩ Redeem FXRP → XRP</h2>
           <button class="close-btn" data-target="redeemCard">&times;</button>
         </div>
-        <p class="hint">Burn FXRP on Flare and receive native XRP on the XRPL. This uses the FAssets redemption system.</p>
+        <p class="hint">Burn FXRP and receive XRP on the XRPL. Redeem directly to an exchange deposit address — no intermediate r-address needed.</p>
+
+        <!-- Mode toggle: mint+redeem vs standalone redeem -->
+        <div class="redeem-mode-toggle">
+          <label class="radio-label">
+            <input type="radio" name="redeemMode" value="standalone" checked />
+            <span>Redeem existing FXRP <small>(EVM wallet signs)</small></span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="redeemMode" value="mint" />
+            <span>Mint + Redeem <small>(XRPL wallet signs, atomic)</small></span>
+          </label>
+        </div>
+
         <div class="redeem-form">
           <div class="form-row">
-            <div class="field">
-              <label>XRPL source address</label>
-              <input id="redeemXrpl" type="text" placeholder="r…" />
+            <div class="field field-exchange">
+              <label>Redeem to</label>
+              <select id="redeemExchange">
+                <option value="">— Personal r-address —</option>
+              </select>
             </div>
             <div class="field">
-              <label>FXRP to redeem</label>
+              <label>FXRP amount</label>
               <input id="redeemAmount" type="text" placeholder="e.g. 100" />
             </div>
           </div>
           <div class="form-row">
             <div class="field">
-              <label>Redeem to (XRPL r-address)</label>
+              <label>XRPL destination address <span class="opt-tag">auto-filled for exchanges</span></label>
               <input id="redeemToRaddr" type="text" placeholder="r…" />
             </div>
             <div class="field">
-              <label>Destination tag (optional)</label>
-              <input id="redeemDestTag" type="text" placeholder="exchange tag" />
+              <label>Destination tag <span class="req-tag" id="tagReqLabel">required for exchanges</span></label>
+              <input id="redeemDestTag" type="text" placeholder="your exchange tag" />
             </div>
           </div>
+          <div class="form-row standalone-only">
+            <div class="field">
+              <label>Signer (your Flare EVM address)</label>
+              <input id="redeemCaller" type="text" placeholder="0x… (the wallet that holds FXRP)" />
+            </div>
+          </div>
+          <div class="form-row mint-only" hidden>
+            <div class="field">
+              <label>XRPL source address (mints the FXRP)</label>
+              <input id="redeemXrpl" type="text" placeholder="r…" />
+            </div>
+          </div>
+          <div class="exchange-warning" id="exchangeWarning" hidden></div>
           <div class="bridge-actions">
-            <button id="redeemPrepareBtn">Prepare redeem payment</button>
+            <button id="redeemPrepareBtn">Prepare redeem</button>
+            <span class="fee-display" id="redeemFee"></span>
           </div>
         </div>
         <div class="result-block" id="redeemResult" hidden></div>
+      </section>
+
+      <!-- Proof of reserves card -->
+      <section class="card reserves-card" id="reservesCard" hidden>
+        <div class="panel-header">
+          <h2>🛡 Proof of Reserves</h2>
+          <button class="close-btn" data-target="reservesCard">&times;</button>
+        </div>
+        <p class="hint">FXRP is backed 1:1 by XRP locked in the FAssets Core Vault. This verifies the on-chain FXRP supply against the actual XRP held on the XRPL.</p>
+        <div class="reserves-grid" id="reservesGrid">
+          <div class="reserve-stat">
+            <span class="label">FXRP Total Supply</span>
+            <span class="value" id="reservesFxrpSupply">—</span>
+            <span class="sub">canonical (Flare)</span>
+          </div>
+          <div class="reserve-stat">
+            <span class="label">Core Vault XRP</span>
+            <span class="value" id="reservesVaultBalance">—</span>
+            <span class="sub" id="reservesVaultAddr">—</span>
+          </div>
+          <div class="reserve-stat">
+            <span class="label">Backing Ratio</span>
+            <span class="value" id="reservesRatio">—</span>
+            <span class="sub" id="reservesStatus">—</span>
+          </div>
+          <div class="reserve-stat">
+            <span class="label">Bridged to other chains</span>
+            <span class="value" id="reservesBridged">—</span>
+            <span class="sub">LayerZero OFT</span>
+          </div>
+        </div>
+        <div class="reserves-distribution" id="reservesDistribution"></div>
+        <div class="reserves-refresh">
+          <button id="reservesRefreshBtn" class="ghost-btn">Refresh</button>
+          <span class="fee-display" id="reservesTimestamp"></span>
+        </div>
       </section>
     </main>
 

@@ -147,3 +147,60 @@ Executor tests (`npm run test:executor`):
 
 ### Dependencies Added
 - `@flarenetwork/flare-periphery-contract-artifacts` (devDependency) — typed ABIs for IAssetManager, IXRPPayment, IFdcHub, IRelay, IFdcVerification
+
+
+## Exchange Redemption Router (Task 6 - COMPLETE)
+Exchange-friendly redemption router built on redeemWithTag. Lets users redeem
+FXRP directly to their exchange deposit address (with destination tag), removing
+the intermediate personal r-address step and custody risk.
+
+### Files
+- **lib/exchange-registry.ts** - curated exchange database (Binance, Kraken, Coinbase, Bitstamp, Bybit, OKX, Gate.io) with deposit r-addresses, tag requirements, min deposit thresholds, deposit verification URLs.
+  - getExchanges(), getExchange(id), getExchangeByAddress(rAddress)
+  - validateRedemption() - returns warnings (min deposit, inactive) + errors (missing tag)
+  - isValidXrplAddress(), isValidDestinationTag() - input validation
+- **server/index.ts** - 3 new endpoints:
+  - GET /exchanges - returns the active exchange registry
+  - POST /prepare-redeem - standalone redeem calldata (no mint), with exchange lookup + validation
+  - GET /reserves - proof-of-reserves data
+- **scripts/exchange-test.ts** - 40 tests (registry, validation, calldata, proof-of-reserves)
+
+### Standalone vs Mint+Redeem
+- Standalone (POST /prepare-redeem): user already holds FXRP. Returns redeemWithTag or redeemAmount calldata for EVM wallet signing. No mint involved.
+- Mint+Redeem (POST /prepare-payment with redeem_with_tag action): atomic mint then redeem via 0xFF memo. User signs one XRPL payment.
+
+### Dashboard UI Enhancements
+- Exchange dropdown in redeem modal (auto-fills deposit r-address)
+- Destination tag saved per-exchange in localStorage
+- Min deposit warnings + verify-on-exchange links
+- Radio toggle: Redeem existing FXRP vs Mint + Redeem
+
+## Proof of Reserves (Task 7 - COMPLETE)
+Verifies FXRP is fully backed by XRP locked in the FAssets Core Vault.
+
+### Files
+- **lib/proof-of-reserves.ts** - computeProofOfReserves():
+  - Reads FXRP ERC-20 totalSupply on Flare (canonical backing obligation)
+  - Reads OFT adapter balanceOf(token) (FXRP locked for bridging)
+  - Queries XRPL account_info for Core Vault actual XRP balance (via xrpl.js websocket)
+  - Fetches per-chain OFT totalSupply across all 7 chains (parallel)
+  - Computes backing ratio: vaultBalance / fxrpSupply (>=1.0 = healthy)
+  - Returns status: healthy | warning (0.95-1.0) | critical (<0.95) | unknown
+- **server/index.ts** - GET /reserves endpoint
+- **Dashboard** - Reserves card with 4 stats + omnichain distribution table
+
+### Live Data (Coston2, verified)
+- FXRP total supply: 6,140,661 FXRP
+- Core Vault XRP balance: 5,704,069 XRP (at rDhpmiPq4BVBDWMV...)
+- Backing ratio: 92.89% (critical - expected on testnet)
+- Bridged to other chains: 1,201,803 FXRP (Base 0.27%, BNB 1.36%, HyperEVM 17.94%)
+
+### Future Enhancement
+Use FDC ConfirmedBlockHeightExists attestations to cryptographically prove the XRPL balance instead of trusting the XRPL API. The FDC client infrastructure exists in lib/fdc-client.ts.
+
+## Test Coverage Summary (172 total)
+- npm run smoke - 23 tests (memo bytes, quote math, live Coston2 RPC)
+- npm run test:crosschain - 48 tests (OFT balances, bridge calldata, LZ fees)
+- npm run test:executor - 61 tests (memo routing, FDC proofs, contract resolution)
+- npm run test:exchange - 40 tests (exchange registry, redeem calldata, proof-of-reserves)
+- npm run test - runs smoke + crosschain + exchange (111 tests)

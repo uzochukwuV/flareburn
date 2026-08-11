@@ -12,7 +12,8 @@
     "test:crosschain": "tsx scripts/crosschain-test.ts",
     "executor": "tsx server/executor.ts",
     "test:executor": "tsx scripts/executor-test.ts",
-    "test": "tsx scripts/smoke-test.ts && tsx scripts/crosschain-test.ts"
+    "test:exchange": "tsx scripts/exchange-test.ts",
+    "test": "tsx scripts/smoke-test.ts && tsx scripts/crosschain-test.ts && tsx scripts/exchange-test.ts"
   },
   "dependencies": {
     "@layerzerolabs/lz-definitions": "^3.1.7",

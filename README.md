@@ -150,28 +150,126 @@ For testing bridge flows on Coston2 ↔ Hyperliquid testnet:
 CROSSCHAIN_TESTNET=true npm start
 ```
 
+## Exchange-friendly redemption router
+
+Redeem FXRP directly to your exchange deposit address — no intermediate
+personal r-address, no re-routing. Built on `redeemWithTag`.
+
+### How it works
+
+```
+User holds FXRP (Flare wallet or smart account)
+  │
+  │  POST /prepare-redeem { exchangeId: "binance", amountXrp: "100", destinationTag: 12345 }
+  │─────────────────────────────────────────────────────────────────────►│
+  │                                                                     │  Returns redeemWithTag calldata
+  │                                                                     │  targeting the exchange's deposit address
+  │  Sign calldata in EVM wallet                                        │
+  │────────────────────────────────────────────────────────────────────►│
+  │                                                                     │  AssetManager burns FXRP
+  │                                                                     │  Agent sends XRP to exchange
+  │                                                                     │  (with destination tag)
+```
+
+### API
+
+| Method & path | Body | Returns |
+|---------------|------|---------|
+| `GET /exchanges` | — | Registry of supported exchanges (Binance, Kraken, Coinbase, Bitstamp, Bybit) |
+| `POST /prepare-redeem` | `{ amountXrp, exchangeId?, redeemerXrplAddress?, destinationTag?, callerAddress? }` | `redeemWithTag` or `redeemAmount` calldata + validation warnings |
+
+### Features
+
+- **Exchange registry** — curated deposit addresses for 5+ exchanges (auto-filled, no pasting)
+- **Destination tag management** — tags saved per-exchange in localStorage, validated as uint32
+- **Minimum deposit warnings** — alerts if amount is below the exchange's minimum
+- **Two redeem modes:**
+  - **Standalone** — burn existing FXRP (EVM wallet signs `redeemWithTag` calldata)
+  - **Mint + Redeem** — atomic mint→redeem via 0xFF memo (XRPL wallet signs)
+- **Address validation** — r-address format checked, exchange lookup by address
+
+### Example: redeem to Binance
+
+```bash
+curl -X POST http://localhost:12000/prepare-redeem \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amountXrp": "100",
+    "exchangeId": "binance",
+    "destinationTag": 123456789
+  }'
+```
+
+Returns calldata for `AssetManager.redeemWithTag(100000000, "rEb8TK3gBgk5auZkwc6sHnwrGVJH8DukL7", 0x0, 123456789)`.
+
+## Proof of reserves
+
+The dashboard includes a **proof-of-reserves** card that verifies FXRP is
+fully backed by XRP locked in the FAssets Core Vault.
+
+### What it checks
+
+1. **FXRP total supply** (Flare on-chain) — the canonical backing obligation
+2. **Core Vault XRP balance** (XRPL cross-chain) — the actual physical reserve
+3. **Backing ratio** — vault balance / FXRP supply (should be ≥ 100%)
+4. **Omnichain distribution** — how FXRP is split across all LayerZero OFT chains
+
+### Data sources
+
+| Source | What | How |
+|--------|------|-----|
+| Flare RPC | FXRP ERC-20 totalSupply | `eth_call` to FXRP token contract |
+| Flare RPC | OFT adapter locked balance | `balanceOf` on OFT adapter |
+| XRPL API | Core Vault actual XRP balance | `account_info` via xrpl.js websocket |
+| Cross-chain RPCs | Per-chain OFT totalSupply | Parallel `eth_call` to each chain |
+
+### API
+
+```bash
+curl http://localhost:12000/reserves
+```
+
+Returns the full reserve data including backing ratio, status (`healthy` /
+`warning` / `critical`), and per-chain supply distribution.
+
+### Future enhancement
+
+The current implementation queries the XRPL API directly for the Core Vault
+balance. A future enhancement would use FDC `ConfirmedBlockHeightExists`
+attestations to cryptographically prove the XRPL balance, removing trust in
+the API response. The FDC client infrastructure exists in `lib/fdc-client.ts`.
+
 ## Project layout
 
 ```
 lib/
   chains.ts            # Chain registry: OFT addresses, LZ V2 EIDs, RPCs
   crosschain-client.ts # Multi-chain balance fetcher + OFT bridge quote/prepare
+  exchange-registry.ts # Curated exchange deposit addresses + validation
+  proof-of-reserves.ts # FXRP supply vs Core Vault XRP balance verification
+  fdc-client.ts        # FDC attestation client (XRPPayment proofs)
+  executor.ts          # Relayer: monitor -> FDC proof -> executeDirectMinting
   memo-builder.ts      # 0xFF memo + PackedUserOperation + Call encoding (ABI)
   flare-client.ts      # Read-only FlareContractRegistry → AssetManager / MAC
   action-builders.ts   # transfer / redeem / redeemWithTag / vault deposit calls
   quote.ts             # XRP↔drops conversion, mint fee math
   payment.ts           # Assembles the unsigned XRPL Payment object
+  xrpl-monitor.ts      # XRPL websocket payment monitor (Core Vault)
 server/
-  index.ts             # Express API + static frontend (+ cross-chain endpoints)
+  index.ts             # Express API + static frontend (+ cross-chain + exchange + reserves)
+  executor.ts          # Executor service (standalone, HTTP API + XRPL monitor)
 public/
   index.html           # Mint gateway: 4-step UI (account → action → quote → prepare)
-  dashboard.html       # Cross-chain dashboard: portfolio + bridge + redeem
+  dashboard.html       # Cross-chain dashboard: portfolio + bridge + redeem + reserves
   styles.css           # Shared dark theme
   dashboard.css        # Dashboard-specific styles
   app.js               # Mint gateway frontend
-  dashboard.js         # Dashboard frontend (parallel queries, bridge prepare)
+  dashboard.js         # Dashboard frontend (parallel queries, bridge, redeem, reserves)
 scripts/
   smoke-test.ts        # 23 assertions: memo bytes, quote math, live RPC
+  crosschain-test.ts   # 48 assertions: OFT balances, bridge calldata, LZ fees
+  executor-test.ts     # 61 assertions: memo routing, FDC proofs, contract resolution
+  exchange-test.ts     # 40 assertions: exchange registry, redeem calldata, proof-of-reserves
 ```
 
 ## Security model
