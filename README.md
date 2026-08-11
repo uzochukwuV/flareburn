@@ -285,6 +285,12 @@ scripts/
 - **Read-only chain access.** `FlareClient` uses `ethers.JsonRpcProvider` with
   no signer. It cannot submit transactions.
 
+
+## NEXT STEPS 
+-Stuck-transaction recovery (0xE0/0xE1/0xE2) — Add a recovery card for failed gasless redeems; the smart-accounts skill documents the exact memo formats.
+-FBTC and FDOGE integrations
+-FCC TEE executor — Move the operator's signing key into a Confidential Space VM for trust-minimized relaying.
+
 ## References
 
 - [Flare Smart Accounts](https://dev.flare.network/smart-accounts/overview)
