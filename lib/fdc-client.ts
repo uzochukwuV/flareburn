@@ -35,18 +35,18 @@ export const XRP_SOURCES = {
 
 /** Verifier API endpoints (official Flare-hosted). */
 export const VERIFIER_URLS = {
-  coston2: "https://coston2.verifier.api.flare.network",
-  coston: "https://coston.verifier.api.flare.network",
-  flare: "https://flare.verifier.api.flare.network",
-  songbird: "https://songbird.verifier.api.flare.network",
+  coston2: "https://fdc-verifiers-testnet.flare.network",
+  coston: "https://fdc-verifiers-testnet.flare.network",
+  flare: "https://fdc-verifiers-mainnet.flare.network",
+  songbird: "https://fdc-verifiers-mainnet.flare.network",
 } as const;
 
 /** DA Layer API endpoints (official Flare-hosted). */
 export const DA_LAYER_URLS = {
-  coston2: "https://coston2-da-layer.flare.network",
-  coston: "https://coston-da-layer.flare.network",
-  flare: "https://flare-da-layer.flare.network",
-  songbird: "https://songbird-da-layer.flare.network",
+  coston2: "https://ctn2-data-availability.flare.network",
+  coston: "https://ctn-data-availability.flare.network",
+  flare: "https://sgb-data-availability.flare.network",
+  songbird: "https://sgb-data-availability.flare.network",
 } as const;
 
 /** Default verifier API key (placeholder; rate-limited). Replace for production. */
@@ -58,7 +58,7 @@ export const VOTING_EPOCH_SECONDS = 90;
 /** Minimal ABIs for FDC contract interactions. */
 const FDC_HUB_ABI = [
   "function requestAttestation(bytes _data) payable",
-  "function calculateAttestationFee(bytes32 _attestationType, bytes32 _sourceId) view returns (uint256)",
+  "function getRequestFee(bytes _data) view returns (uint256)",
 ] as const;
 
 const RELAY_ABI = [
@@ -132,9 +132,17 @@ export async function prepareXrpPaymentRequest(
     throw new Error(`proofOwner must be a valid EVM address: ${proofOwner}`);
   }
 
+  const sourceIdStr = config.network === "flare" || config.network === "songbird" ? "XRP" : "testXRP";
+  const padBytes32 = (s: string): string => {
+    const bytes = ethers.toUtf8Bytes(s);
+    const padded = new Uint8Array(32);
+    padded.set(bytes.slice(0, 32));
+    return ethers.hexlify(padded);
+  };
+
   const body = {
-    attestationType: "0x08",
-    sourceId: config.network === "flare" || config.network === "songbird" ? "XRP" : "testXRP",
+    attestationType: padBytes32("XRPPayment"),
+    sourceId: padBytes32(sourceIdStr),
     requestBody: {
       transactionId,
       proofOwner,
@@ -146,7 +154,7 @@ export async function prepareXrpPaymentRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-apikey": apiKey,
+      "x-api-key": apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -156,8 +164,8 @@ export async function prepareXrpPaymentRequest(
     throw new Error(`verifier prepareRequest failed (${resp.status}): ${text}`);
   }
 
-  const json = (await resp.json()) as { data?: { abiEncodedRequest?: string }; abiEncodedRequest?: string };
-  const encoded = json.data?.abiEncodedRequest ?? json.abiEncodedRequest;
+  const json = (await resp.json()) as { abiEncodedRequest?: string; data?: { abiEncodedRequest?: string } };
+  const encoded = json.abiEncodedRequest ?? json.data?.abiEncodedRequest;
   if (typeof encoded !== "string" || !encoded.startsWith("0x")) {
     throw new Error(`verifier returned unexpected response: ${JSON.stringify(json).slice(0, 300)}`);
   }
@@ -170,7 +178,7 @@ export async function prepareXrpPaymentRequest(
  *
  * The voting round is derived from the block timestamp of the tx receipt:
  *   roundId = floor((blockTimestamp - firstVotingRoundStartTs) / votingEpochDurationSeconds)
- * On Coston2, firstVotingRoundStartTs = 0 and epoch = 90s, so roundId ≈ blockTimestamp / 90.
+ * firstVotingRoundStartTs is read from FlareSystemsManager (queried from the registry).
  */
 export async function submitAttestationRequest(
   provider: ethers.Provider,
@@ -178,6 +186,7 @@ export async function submitAttestationRequest(
   fdcHubAddress: string,
   abiEncodedRequest: string,
   fee: bigint,
+  registryAddress: string,
 ): Promise<{ votingRoundId: bigint; txHash: string; blockTimestamp: number }> {
   const hub = new ethers.Contract(fdcHubAddress, FDC_HUB_ABI, signer);
   const tx = await hub.requestAttestation(abiEncodedRequest, { value: fee });
@@ -187,23 +196,46 @@ export async function submitAttestationRequest(
   const blockTimestamp = (await provider.getBlock(receipt.blockNumber))?.timestamp ?? 0;
   if (blockTimestamp === 0) throw new Error(`could not read block ${receipt.blockNumber} timestamp`);
 
-  // On Coston2/Flare, firstVotingRoundStartTs = 0, epoch = 90s.
-  const votingRoundId = BigInt(blockTimestamp) / BigInt(VOTING_EPOCH_SECONDS);
+  // Read firstVotingRoundStartTs from FlareSystemsManager (via registry).
+  const firstVotingRoundStartTs = await getFirstVotingRoundStartTs(provider, registryAddress);
+
+  const votingRoundId =
+    (BigInt(blockTimestamp) - firstVotingRoundStartTs) / BigInt(VOTING_EPOCH_SECONDS);
 
   return { votingRoundId, txHash: tx.hash, blockTimestamp };
 }
 
 /**
- * Calculate the attestation fee for a given attestation type + source.
+ * Read firstVotingRoundStartTs from FlareSystemsManager (resolved via ContractRegistry).
+ */
+async function getFirstVotingRoundStartTs(
+  provider: ethers.Provider,
+  registryAddress: string,
+): Promise<bigint> {
+  const registry = new ethers.Contract(
+    registryAddress,
+    ["function getContractAddressByName(string name) view returns (address)"],
+    provider,
+  );
+  const fsmAddress = await registry.getContractAddressByName("FlareSystemsManager");
+  const fsm = new ethers.Contract(
+    fsmAddress,
+    ["function firstVotingRoundStartTs() view returns (uint256)"],
+    provider,
+  );
+  return (await fsm.firstVotingRoundStartTs()) as bigint;
+}
+
+/**
+ * Query the attestation fee for a given abiEncodedRequest from FdcRequestFeeConfigurations.
  */
 export async function calculateAttestationFee(
   provider: ethers.Provider,
-  fdcHubAddress: string,
-  attestationType: string,
-  sourceId: string,
+  fdcRequestFeeConfigAddress: string,
+  abiEncodedRequest: string,
 ): Promise<bigint> {
-  const hub = new ethers.Contract(fdcHubAddress, FDC_HUB_ABI, provider);
-  return (await hub.calculateAttestationFee(attestationType, sourceId)) as bigint;
+  const feeConfig = new ethers.Contract(fdcRequestFeeConfigAddress, FDC_HUB_ABI, provider);
+  return (await feeConfig.getRequestFee(ethers.getBytes(abiEncodedRequest))) as bigint;
 }
 
 /**
@@ -233,77 +265,115 @@ export async function waitForFinalization(
 /**
  * Fetch the attestation proof from the DA Layer after the voting round is finalized.
  * Returns the raw proof JSON (merkleProof + data).
+ *
+ * The DA Layer may lag slightly behind on-chain finalization, so we retry for up to
+ * `retryTimeoutMs` (default 120s) with `retryIntervalMs` (default 10s) between attempts.
  */
 export async function fetchProof(
   config: FdcConfig,
   votingRoundId: bigint,
   abiEncodedRequest: string,
+  retryTimeoutMs = 120_000,
+  retryIntervalMs = 10_000,
 ): Promise<XRPPaymentProof> {
   const baseUrl = config.daLayerUrl ?? DA_LAYER_URLS[config.network];
   const apiKey = config.verifierApiKey ?? DEFAULT_VERIFIER_API_KEY;
 
   const url = `${baseUrl}/api/v1/fdc/proof-by-request-round-raw`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-apikey": apiKey,
-    },
-    body: JSON.stringify({
-      votingRoundId: Number(votingRoundId),
-      requestBytes: abiEncodedRequest,
-    }),
-  });
+  const deadline = Date.now() + retryTimeoutMs;
 
-  if (!resp.ok) {
+  for (;;) {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        votingRoundId: Number(votingRoundId),
+        requestBytes: abiEncodedRequest,
+      }),
+    });
+
+    if (resp.ok) {
+      const json = (await resp.json()) as { data?: any };
+      const rawData = json.data ?? json;
+      return decodeProofResponse(rawData);
+    }
+
     const text = await resp.text();
-    throw new Error(`DA Layer proof fetch failed (${resp.status}): ${text}`);
+    if (Date.now() > deadline) {
+      throw new Error(`DA Layer proof fetch failed (${resp.status}): ${text}`);
+    }
+    console.log(
+      `[fdc-client] proof not yet available (round ${votingRoundId}, status ${resp.status}); retrying in ${retryIntervalMs / 1000}s…`,
+    );
+    await sleep(retryIntervalMs);
   }
-
-  const json = (await resp.json()) as { data?: any };
-  const rawData = json.data ?? json;
-  return decodeProofResponse(rawData);
 }
 
 /**
  * Decode the DA Layer response into a typed XRPPaymentProof.
- * The response contains merkleProof (hex array) + data (nested response struct).
+ *
+ * The DA Layer returns:
+ *   { response_hex, attestation_type, proof }
+ * where `response_hex` is the ABI-encoded full attestation struct:
+ *   (bytes32 attestationType, bytes32 sourceId, uint64 votingRound,
+ *    uint64 lowestUsedTimestamp, requestBody, responseBody)
+ * and `proof` is the Merkle proof path (bytes32[]).
  */
+const ATTESTATION_RESPONSE_ABI =
+  "tuple(bytes32 attestationType, bytes32 sourceId, uint64 votingRound, uint64 lowestUsedTimestamp," +
+  " tuple(bytes32 transactionId, address proofOwner) requestBody," +
+  " tuple(uint64 blockNumber, uint64 blockTimestamp, string sourceAddress, bytes32 sourceAddressHash," +
+  " bytes32 receivingAddressHash, bytes32 intendedReceivingAddressHash," +
+  " int256 spentAmount, int256 intendedSpentAmount, int256 receivedAmount, int256 intendedReceivedAmount," +
+  " bool hasMemoData, bytes firstMemoData, bool hasDestinationTag, uint256 destinationTag, uint8 status) responseBody)";
+
 export function decodeProofResponse(raw: any): XRPPaymentProof {
-  const merkleProof: string[] = (raw.merkleProof ?? raw.proof ?? []).map((p: any) =>
+  // Merkle proof array — DA Layer uses "proof" (snake_case).
+  const merkleProof: string[] = (raw.proof ?? raw.merkleProof ?? []).map((p: any) =>
     typeof p === "string" ? p : ethers.hexlify(p),
   );
 
-  const d = raw.data ?? raw;
-  const rb = d.responseBody ?? d.ResponseBody ?? {};
+  // The response_hex contains the full ABI-encoded attestation struct.
+  const responseHex: string = raw.response_hex ?? raw.responseHex;
+  if (!responseHex) {
+    throw new Error("DA Layer response missing response_hex field");
+  }
+
+  const [decoded] = ethers.AbiCoder.defaultAbiCoder().decode(
+    [ATTESTATION_RESPONSE_ABI],
+    responseHex,
+  );
 
   return {
     merkleProof,
     data: {
-      attestationType: d.attestationType ?? d.AttestationType ?? "0x08",
-      sourceId: d.sourceId ?? d.SourceId ?? "0x00",
-      votingRound: Number(d.votingRound ?? d.VotingRound ?? 0),
-      lowestUsedTimestamp: Number(d.lowestUsedTimestamp ?? d.LowestUsedTimestamp ?? 0),
+      attestationType: decoded.attestationType,
+      sourceId: decoded.sourceId,
+      votingRound: Number(decoded.votingRound),
+      lowestUsedTimestamp: Number(decoded.lowestUsedTimestamp),
       requestBody: {
-        transactionId: d.requestBody?.transactionId ?? d.requestBody?.TransactionId ?? "0x00",
-        proofOwner: d.requestBody?.proofOwner ?? d.requestBody?.ProofOwner ?? ethers.ZeroAddress,
+        transactionId: decoded.requestBody.transactionId,
+        proofOwner: decoded.requestBody.proofOwner,
       },
       responseBody: {
-        blockNumber: Number(rb.blockNumber ?? rb.BlockNumber ?? 0),
-        blockTimestamp: Number(rb.blockTimestamp ?? rb.BlockTimestamp ?? 0),
-        sourceAddress: rb.sourceAddress ?? rb.SourceAddress ?? "",
-        sourceAddressHash: rb.sourceAddressHash ?? rb.SourceAddressHash ?? ethers.ZeroHash,
-        receivingAddressHash: rb.receivingAddressHash ?? rb.ReceivingAddressHash ?? ethers.ZeroHash,
-        intendedReceivingAddressHash: rb.intendedReceivingAddressHash ?? rb.IntendedReceivingAddressHash ?? ethers.ZeroHash,
-        spentAmount: BigInt(rb.spentAmount ?? rb.SpentAmount ?? 0),
-        intendedSpentAmount: BigInt(rb.intendedSpentAmount ?? rb.IntendedSpentAmount ?? 0),
-        receivedAmount: BigInt(rb.receivedAmount ?? rb.ReceivedAmount ?? 0),
-        intendedReceivedAmount: BigInt(rb.intendedReceivedAmount ?? rb.IntendedReceivedAmount ?? 0),
-        hasMemoData: Boolean(rb.hasMemoData ?? rb.HasMemoData ?? false),
-        firstMemoData: rb.firstMemoData ?? rb.FirstMemoData ?? "0x",
-        hasDestinationTag: Boolean(rb.hasDestinationTag ?? rb.HasDestinationTag ?? false),
-        destinationTag: BigInt(rb.destinationTag ?? rb.DestinationTag ?? 0),
-        status: Number(rb.status ?? rb.Status ?? 0),
+        blockNumber: Number(decoded.responseBody.blockNumber),
+        blockTimestamp: Number(decoded.responseBody.blockTimestamp),
+        sourceAddress: decoded.responseBody.sourceAddress,
+        sourceAddressHash: decoded.responseBody.sourceAddressHash,
+        receivingAddressHash: decoded.responseBody.receivingAddressHash,
+        intendedReceivingAddressHash: decoded.responseBody.intendedReceivingAddressHash,
+        spentAmount: BigInt(decoded.responseBody.spentAmount),
+        intendedSpentAmount: BigInt(decoded.responseBody.intendedSpentAmount),
+        receivedAmount: BigInt(decoded.responseBody.receivedAmount),
+        intendedReceivedAmount: BigInt(decoded.responseBody.intendedReceivedAmount),
+        hasMemoData: Boolean(decoded.responseBody.hasMemoData),
+        firstMemoData: decoded.responseBody.firstMemoData,
+        hasDestinationTag: Boolean(decoded.responseBody.hasDestinationTag),
+        destinationTag: BigInt(decoded.responseBody.destinationTag),
+        status: Number(decoded.responseBody.status),
       },
     },
   };

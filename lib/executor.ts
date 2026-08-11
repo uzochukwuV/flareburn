@@ -285,6 +285,7 @@ export class Executor {
   private assetManagerAddress?: string;
   private fdcHubAddress?: string;
   private relayAddress?: string;
+  private fdcRequestFeeConfigAddress?: string;
   private executorAddress: string;
 
   constructor(config: ExecutorConfig) {
@@ -308,28 +309,32 @@ export class Executor {
     return this.executorAddress;
   }
 
-  /** Resolve AssetManager, FdcHub, and Relay addresses from the registry. */
+  /** Resolve AssetManager, FdcHub, Relay, and FdcRequestFeeConfigurations from the registry. */
   async resolveContracts(): Promise<{
     assetManager: string;
     fdcHub: string;
     relay: string;
+    fdcRequestFeeConfig: string;
   }> {
-    if (this.assetManagerAddress && this.fdcHubAddress && this.relayAddress) {
+    if (this.assetManagerAddress && this.fdcHubAddress && this.relayAddress && this.fdcRequestFeeConfigAddress) {
       return {
         assetManager: this.assetManagerAddress,
         fdcHub: this.fdcHubAddress,
         relay: this.relayAddress,
+        fdcRequestFeeConfig: this.fdcRequestFeeConfigAddress,
       };
     }
-    const [assetManager, fdcHub, relay] = await Promise.all([
+    const [assetManager, fdcHub, relay, fdcRequestFeeConfig] = await Promise.all([
       this.registry.getContractAddressByName("AssetManagerFXRP"),
       this.registry.getContractAddressByName("FdcHub"),
       this.registry.getContractAddressByName("Relay"),
+      this.registry.getContractAddressByName("FdcRequestFeeConfigurations"),
     ]);
     this.assetManagerAddress = assetManager;
     this.fdcHubAddress = fdcHub;
     this.relayAddress = relay;
-    return { assetManager, fdcHub, relay };
+    this.fdcRequestFeeConfigAddress = fdcRequestFeeConfig;
+    return { assetManager, fdcHub, relay, fdcRequestFeeConfig };
   }
 
   /** Load the journal from disk (for crash recovery). */
@@ -402,16 +407,10 @@ export class Executor {
       );
 
       // Step 2: Calculate fee + submit attestation request to FdcHub.
-      // Parse attestationType (bytes32) and sourceId (bytes32) from the encoded
-      // request — the verifier returns the correctly-encoded values.
-      const reqBytes = ethers.getBytes(abiEncodedRequest);
-      const attTypeFromReq = ethers.hexlify(reqBytes.slice(0, 32));
-      const sourceIdFromReq = ethers.hexlify(reqBytes.slice(32, 64));
       const fee = await calculateAttestationFee(
         this.provider,
-        contracts.fdcHub,
-        attTypeFromReq,
-        sourceIdFromReq,
+        contracts.fdcRequestFeeConfig,
+        abiEncodedRequest,
       );
       console.log(`[executor] ${payment.transactionId.slice(0, 18)}… attestation fee: ${ethers.formatEther(fee)} FLR`);
 
@@ -421,6 +420,7 @@ export class Executor {
         contracts.fdcHub,
         abiEncodedRequest,
         fee,
+        FLARE_CONTRACTS_REGISTRY_ADDRESS,
       );
       entry.votingRoundId = votingRoundId.toString();
       entry.proofTxHash = txHash;
@@ -582,14 +582,10 @@ export class Executor {
       );
 
       // Step 2: Calculate fee + submit attestation request.
-      const reqBytes = ethers.getBytes(abiEncodedRequest);
-      const attTypeFromReq = ethers.hexlify(reqBytes.slice(0, 32));
-      const sourceIdFromReq = ethers.hexlify(reqBytes.slice(32, 64));
       const fee = await calculateAttestationFee(
         this.provider,
-        contracts.fdcHub,
-        attTypeFromReq,
-        sourceIdFromReq,
+        contracts.fdcRequestFeeConfig,
+        abiEncodedRequest,
       );
       console.log(`[executor] ${transactionId.slice(0, 18)}… attestation fee: ${ethers.formatEther(fee)} FLR`);
 
@@ -599,6 +595,7 @@ export class Executor {
         contracts.fdcHub,
         abiEncodedRequest,
         fee,
+        FLARE_CONTRACTS_REGISTRY_ADDRESS,
       );
       entry.votingRoundId = votingRoundId.toString();
       entry.proofTxHash = txHash;
