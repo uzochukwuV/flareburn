@@ -60,6 +60,31 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
+  exchanges: () => apiGet("/exchanges", { ttl: CACHE_TTL.chains, key: "exchanges" }),
+  prepareRedeem: (body) =>
+    fetchJson("/prepare-redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  prepareGaslessRedeem: (body) =>
+    fetchJson("/prepare-gasless-redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  submitGaslessRedeem: (body) =>
+    fetchJson("/submit-gasless-redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  decodeMemo: (body) =>
+    fetchJson("/decode-memo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
 };
 
 // ============ Format layer ============
@@ -494,6 +519,270 @@ async function prepareCalldata() {
   }
 }
 
+// ============ Redeem widget (standard + gasless) ============
+
+const redeem = {
+  mode: "standard", // "standard" | "gasless"
+  destMode: "exchange", // "exchange" | "custom"
+  exchanges: [],
+  selectedExchange: null, // exchange object
+  lastResult: null, // { kind: "standard"|"gasless", data }
+};
+
+const XRPL_RE = /^r[a-zA-Z0-9]{20,40}$/;
+
+function setRedeemMode(mode) {
+  redeem.mode = mode;
+  const std = $("redeemModeStandard");
+  const gas = $("redeemModeGasless");
+  const desc = $("redeemModeDesc");
+  const xrplWrap = $("redeemXrplWrap");
+  const submitBtn = $("redeemSubmitBtn");
+  if (mode === "standard") {
+    std.classList.add("bg-primary", "text-on-primary");
+    std.classList.remove("text-on-surface-variant");
+    gas.classList.remove("bg-primary", "text-on-primary");
+    gas.classList.add("text-on-surface-variant");
+    desc.textContent = "Burn existing FXRP on Flare and receive XRP. Sign the calldata in your EVM wallet (MetaMask). Pays Flare gas.";
+    xrplWrap.classList.add("hidden");
+    submitBtn.classList.add("hidden");
+  } else {
+    gas.classList.add("bg-primary", "text-on-primary");
+    gas.classList.remove("text-on-surface-variant");
+    std.classList.remove("bg-primary", "text-on-primary");
+    std.classList.add("text-on-surface-variant");
+    desc.textContent = "No FLR needed. Sign a 1-drop XRPL Payment; the relayer pays Flare gas and executes the redeem. Best for smart-account holders.";
+    xrplWrap.classList.remove("hidden");
+    submitBtn.classList.remove("hidden");
+  }
+}
+
+function setRedeemDestMode(mode) {
+  redeem.destMode = mode;
+  const ex = $("redeemDestExchange");
+  const cu = $("redeemDestCustom");
+  const grid = $("redeemExchangeGrid");
+  const wrap = $("redeemCustomWrap");
+  if (mode === "exchange") {
+    ex.classList.add("border-primary/50", "bg-primary/5", "text-primary-fixed-dim");
+    ex.classList.remove("border-outline-variant", "text-on-surface-variant");
+    cu.classList.remove("border-primary/50", "bg-primary/5", "text-primary-fixed-dim");
+    cu.classList.add("border-outline-variant", "text-on-surface-variant");
+    grid.classList.remove("hidden");
+    wrap.classList.add("hidden");
+  } else {
+    cu.classList.add("border-primary/50", "bg-primary/5", "text-primary-fixed-dim");
+    cu.classList.remove("border-outline-variant", "text-on-surface-variant");
+    ex.classList.remove("border-primary/50", "bg-primary/5", "text-primary-fixed-dim");
+    ex.classList.add("border-outline-variant", "text-on-surface-variant");
+    grid.classList.add("hidden");
+    wrap.classList.remove("hidden");
+    redeem.selectedExchange = null;
+    updateTagVisibility(null);
+  }
+}
+
+function renderExchangeGrid() {
+  const grid = $("redeemExchangeGrid");
+  if (!grid || !redeem.exchanges.length) return;
+  grid.innerHTML = redeem.exchanges.map((ex) => {
+    const selected = redeem.selectedExchange && redeem.selectedExchange.id === ex.id;
+    const cls = selected
+      ? "border-primary bg-primary/10"
+      : "border-outline-variant hover:border-primary/50";
+    return `<button data-exchange-id="${ex.id}" class="ex-card ${cls} flex items-center gap-2 p-2 rounded border bg-surface-container-low transition-colors text-left">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style="background:${ex.color}33;color:${ex.color}">${ex.initials}</span>
+      <div class="min-w-0">
+        <p class="text-label-sm font-label-sm font-bold text-on-surface truncate">${ex.name}</p>
+        <p class="text-[10px] font-mono text-on-surface-variant truncate">${ex.depositAddress.slice(0, 10)}…</p>
+      </div>
+    </button>`;
+  }).join("");
+  grid.querySelectorAll(".ex-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.exchangeId;
+      redeem.selectedExchange = redeem.exchanges.find((e) => e.id === id);
+      renderExchangeGrid();
+      updateTagVisibility(redeem.selectedExchange);
+    });
+  });
+}
+
+function updateTagVisibility(exchange) {
+  const wrap = $("redeemTagWrap");
+  if (redeem.destMode === "exchange" && exchange && exchange.requiresTag) {
+    wrap.classList.remove("hidden");
+  } else if (redeem.destMode === "custom") {
+    // custom: show tag field so user can optionally provide one
+    wrap.classList.remove("hidden");
+  } else {
+    wrap.classList.add("hidden");
+  }
+}
+
+async function loadExchanges() {
+  try {
+    const data = await API.exchanges();
+    redeem.exchanges = data.exchanges || [];
+    renderExchangeGrid();
+  } catch (e) {
+    console.warn("exchanges load failed:", e.message);
+  }
+}
+
+function buildRedeemRequest() {
+  const amount = ($("redeemAmount").value || "").trim();
+  if (!amount || Number(amount) <= 0) throw new Error("Enter a FXRP amount to redeem");
+  const base = { amountXrp: String(amount) };
+  const tagRaw = ($("redeemTag").value || "").trim();
+
+  if (redeem.destMode === "exchange") {
+    if (!redeem.selectedExchange) throw new Error("Select an exchange");
+    base.exchangeId = redeem.selectedExchange.id;
+    if (redeem.selectedExchange.requiresTag) {
+      if (!tagRaw) throw new Error(`${redeem.selectedExchange.name} requires a destination tag`);
+      base.destinationTag = Number(tagRaw);
+    }
+  } else {
+    const addr = ($("redeemCustomAddr").value || "").trim();
+    if (!XRPL_RE.test(addr)) throw new Error("Enter a valid XRPL r-address");
+    base.redeemerXrplAddress = addr;
+    if (tagRaw) base.destinationTag = Number(tagRaw);
+  }
+
+  if (redeem.mode === "standard") {
+    if (state.address && /^0x[a-fA-F0-9]{40}$/.test(state.address)) {
+      base.callerAddress = state.address;
+    }
+    return { kind: "standard", body: base };
+  } else {
+    const xrpl = ($("redeemXrplAddr").value || "").trim();
+    if (!XRPL_RE.test(xrpl)) throw new Error("Enter your XRPL address for gasless redeem");
+    const dest = redeem.destMode === "exchange"
+      ? redeem.selectedExchange.depositAddress
+      : ($("redeemCustomAddr").value || "").trim();
+    const gaslessBody = {
+      xrplAddress: xrpl,
+      amountXrp: String(amount),
+      destinationAddress: dest,
+    };
+    if (redeem.destMode === "exchange" && redeem.selectedExchange.requiresTag && tagRaw) {
+      gaslessBody.destinationTag = Number(tagRaw);
+    } else if (redeem.destMode === "custom" && tagRaw) {
+      gaslessBody.destinationTag = Number(tagRaw);
+    }
+    return { kind: "gasless", body: gaslessBody };
+  }
+}
+
+async function prepareRedeem() {
+  let req;
+  try {
+    req = buildRedeemRequest();
+  } catch (e) {
+    toast(e.message, "error");
+    return;
+  }
+  $("redeemResult").classList.add("hidden");
+  $("redeemWarnings").classList.add("hidden");
+  $("redeemPrepareBtn").textContent = "Preparing…";
+  $("redeemPrepareBtn").disabled = true;
+  try {
+    let data;
+    if (req.kind === "standard") {
+      data = await API.prepareRedeem(req.body);
+      redeem.lastResult = { kind: "standard", data };
+      renderRedeemStandard(data);
+    } else {
+      data = await API.prepareGaslessRedeem(req.body);
+      redeem.lastResult = { kind: "gasless", data };
+      renderRedeemGasless(data);
+    }
+    if (data.warnings && data.warnings.length) {
+      $("redeemWarnings").textContent = data.warnings.join("; ");
+      $("redeemWarnings").classList.remove("hidden");
+    }
+    $("redeemResult").classList.remove("hidden");
+    toast("Redeem prepared", "check_circle");
+  } catch (e) {
+    toast(`Redeem failed: ${e.message}`, "error");
+  } finally {
+    $("redeemPrepareBtn").textContent = "Prepare Redeem";
+    $("redeemPrepareBtn").disabled = false;
+  }
+}
+
+function renderRedeemStandard(data) {
+  $("redeemFn").textContent = data.function;
+  $("redeemTarget").textContent = data.to;
+  $("redeemCalldata").textContent = data.data;
+  $("redeemPaymentWrap").classList.add("hidden");
+  $("redeemNote").textContent = data.note || "";
+  $("redeemSubmitBtn").classList.add("hidden");
+}
+
+function renderRedeemGasless(data) {
+  $("redeemFn").textContent = "Gasless redeem (1-drop XRPL Payment)";
+  $("redeemTarget").textContent = data.payment.Destination;
+  $("redeemCalldata").textContent = data.memoHex || "—";
+  $("redeemPaymentWrap").classList.remove("hidden");
+  $("redeemPaymentJson").textContent = JSON.stringify(data.payment, null, 2);
+  $("redeemNote").textContent = data.note || "";
+  $("redeemSubmitBtn").classList.remove("hidden");
+}
+
+async function submitGaslessRedeem() {
+  if (!redeem.lastResult || redeem.lastResult.kind !== "gasless") {
+    toast("Prepare a gasless redeem first", "error");
+    return;
+  }
+  $("redeemSubmitBtn").textContent = "Submitting…";
+  $("redeemSubmitBtn").disabled = true;
+  try {
+    const data = await API.submitGaslessRedeem(redeem.lastResult.data);
+    toast("Submitted to relayer", "check_circle");
+    showResult("Gasless Redeem Submitted", JSON.stringify(data, null, 2));
+  } catch (e) {
+    toast(`Submit failed: ${e.message}`, "error");
+  } finally {
+    $("redeemSubmitBtn").textContent = "Submit to Relayer";
+    $("redeemSubmitBtn").disabled = false;
+  }
+}
+
+function copyRedeemCalldata() {
+  if (!redeem.lastResult) return;
+  let text;
+  if (redeem.lastResult.kind === "standard") {
+    text = redeem.lastResult.data.data;
+  } else {
+    text = JSON.stringify(redeem.lastResult.data.payment, null, 2);
+  }
+  navigator.clipboard?.writeText(text);
+  toast("Copied", "content_copy");
+}
+
+// ============ Decode Memo widget ============
+
+async function decodeMemo() {
+  const hex = ($("decodeMemoInput").value || "").trim();
+  if (!hex) { toast("Paste a memo hex first", "error"); return; }
+  $("decodeMemoResult").classList.add("hidden");
+  $("decodeMemoError").classList.add("hidden");
+  try {
+    const data = await API.decodeMemo({ memoHex: hex });
+    $("dmOpcode").textContent = data.opcode;
+    $("dmWalletId").textContent = data.walletId;
+    $("dmExecFee").textContent = data.executorFeeUba;
+    $("dmLength").textContent = data.userOpEncodedLengthBytes + " bytes";
+    $("dmUserOp").textContent = data.userOpEncoded;
+    $("decodeMemoResult").classList.remove("hidden");
+  } catch (e) {
+    $("decodeMemoError").textContent = e.message;
+    $("decodeMemoError").classList.remove("hidden");
+  }
+}
+
 // ============ Init + events ============
 
 async function init() {
@@ -561,6 +850,25 @@ async function init() {
   $("tabRedeem").addEventListener("click", () => {
     toast("Redeem FXRP → see the Mint Gateway dashboard", "info");
   });
+
+  // Redeem widget events
+  $("redeemModeStandard").addEventListener("click", () => setRedeemMode("standard"));
+  $("redeemModeGasless").addEventListener("click", () => setRedeemMode("gasless"));
+  $("redeemDestExchange").addEventListener("click", () => setRedeemDestMode("exchange"));
+  $("redeemDestCustom").addEventListener("click", () => setRedeemDestMode("custom"));
+  $("redeemPrepareBtn").addEventListener("click", prepareRedeem);
+  $("redeemCopyBtn").addEventListener("click", copyRedeemCalldata);
+  $("redeemSubmitBtn").addEventListener("click", submitGaslessRedeem);
+
+  // Decode memo widget events
+  $("decodeMemoBtn").addEventListener("click", decodeMemo);
+  $("dmCopyBtn").addEventListener("click", () => {
+    navigator.clipboard?.writeText($("dmUserOp").textContent);
+    toast("UserOp copied", "content_copy");
+  });
+
+  // Load exchanges for redeem widget
+  loadExchanges();
 
   // Load chains + status first
   try {

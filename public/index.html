@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XRP → Flare Gateway · mint FXRP & act, one XRPL Payment</title>
+    <title>Flareburn — FXRP: XRP on Flare, everywhere</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,6 +11,106 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Landing page — extends styles.css (vars + bg) */
+      .lp { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+      .nav-links { display: flex; align-items: center; gap: 28px; }
+      .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .15s; }
+      .nav-links a:hover { color: var(--text); }
+      .nav-cta { display: flex; gap: 12px; align-items: center; }
+
+      .hero-lp { padding: 80px 0 56px; text-align: center; position: relative; }
+      .hero-lp .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--accent); padding: 6px 14px; border-radius: 999px;
+        border: 1px solid rgba(0,229,168,.25); background: rgba(0,229,168,.06);
+        margin-bottom: 24px;
+      }
+      .hero-lp h1 {
+        font-size: clamp(36px, 6vw, 68px); font-weight: 700; line-height: 1.05;
+        letter-spacing: -0.02em; margin: 0 auto 22px; max-width: 16ch;
+      }
+      .hero-lp h1 .grad {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .hero-lp p.sub { color: var(--muted); font-size: 18px; line-height: 1.6; max-width: 56ch; margin: 0 auto 36px; }
+      .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .btn-lg { padding: 15px 30px; font-size: 15px; border-radius: 12px; }
+      .stat-strip {
+        display: flex; justify-content: center; gap: 48px; margin-top: 64px; flex-wrap: wrap;
+        padding: 24px 0; border-top: 1px solid var(--panel-border); border-bottom: 1px solid var(--panel-border);
+      }
+      .stat-strip .stat { text-align: center; }
+      .stat-strip .stat .num { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--text); }
+      .stat-strip .stat .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+
+      .section { padding: 72px 0; }
+      .section-head { text-align: center; margin-bottom: 48px; }
+      .section-head h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.01em; margin: 0 0 12px; }
+      .section-head p { color: var(--muted); font-size: 17px; max-width: 56ch; margin: 0 auto; line-height: 1.6; }
+
+      /* Paper cards */
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+      .paper {
+        background: var(--panel); border: 1px solid var(--panel-border);
+        border-radius: 18px; padding: 30px;
+        backdrop-filter: blur(8px);
+        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        display: flex; flex-direction: column; gap: 14px;
+        box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -28px rgba(0,0,0,.6);
+      }
+      .paper:hover { transform: translateY(-4px); border-color: rgba(0,229,168,.3); box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 24px 50px -24px rgba(0,229,168,.18); }
+      .paper .ico {
+        width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center;
+        font-size: 24px; background: linear-gradient(135deg, rgba(0,229,168,.15), rgba(91,139,255,.15));
+        color: var(--accent);
+      }
+      .paper h3 { font-size: 19px; font-weight: 600; margin: 0; }
+      .paper p { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin: 0; }
+      .paper .tag { font-family: var(--mono); font-size: 11px; color: var(--accent-2); text-transform: uppercase; letter-spacing: .05em; }
+
+      /* Product route cards (bigger, two-up) */
+      .route-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; }
+      .route {
+        position: relative; overflow: hidden;
+        background: var(--panel); border: 1px solid var(--panel-border); border-radius: 22px;
+        padding: 36px; backdrop-filter: blur(8px);
+        display: flex; flex-direction: column; gap: 18px; min-height: 260px;
+        transition: transform .2s, border-color .2s, box-shadow .2s;
+      }
+      .route:hover { transform: translateY(-4px); border-color: rgba(91,139,255,.35); box-shadow: 0 24px 60px -28px rgba(91,139,255,.25); }
+      .route .glow { position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; border-radius: 50%; filter: blur(50px); opacity: .25; pointer-events: none; }
+      .route.r1 .glow { background: var(--accent); }
+      .route.r2 .glow { background: var(--accent-2); }
+      .route .label { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+      .route h3 { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+      .route p { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 0; }
+      .route .features { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+      .route .features li { list-style: none; color: var(--text); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+      .route .features li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+      .route .go { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 600; text-decoration: none; font-size: 15px; }
+      .route .go:hover { gap: 12px; }
+      .route .go .arr { transition: transform .15s; }
+
+      /* How it works — steps */
+      .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; }
+      .step-card { display: flex; flex-direction: column; gap: 12px; }
+      .step-card .snum { font-family: var(--mono); font-size: 13px; color: var(--accent-2); }
+      .step-card .stit { font-size: 17px; font-weight: 600; }
+      .step-card .sdesc { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+      .cta-band { text-align: center; padding: 72px 0 56px; }
+      .cta-band h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin: 0 0 14px; letter-spacing: -0.01em; }
+      .cta-band p { color: var(--muted); font-size: 17px; margin: 0 auto 32px; max-width: 48ch; line-height: 1.6; }
+
+      .lp-footer { border-top: 1px solid var(--panel-border); padding: 36px 0 48px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+      .lp-footer .flinks { display: flex; gap: 22px; }
+      .lp-footer .flinks a { color: var(--muted); text-decoration: none; }
+      .lp-footer .flinks a:hover { color: var(--text); }
+    </style>
   </head>
   <body>
     <div class="bg-grid" aria-hidden="true"></div>
@@ -19,122 +119,174 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark">◈</span>
-        <span class="brand-name">XRP&nbsp;·&nbsp;Flare&nbsp;Gateway</span>
+        <span class="brand-name">Flareburn</span>
       </div>
-      <div class="net-pill" id="netPill" data-network="…">
-        <span class="dot"></span><span id="netLabel">connecting…</span>
+      <nav class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#products">Products</a>
+        <a href="#features">Features</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="/gateway.html" class="btn btn-ghost">Mint Gateway</a>
+        <a href="/portfolio.html" class="btn btn-primary">Open Dashboard</a>
       </div>
     </header>
 
     <main>
-      <section class="hero">
-        <h1>Mint <em>FXRP</em> and act on Flare — from a single XRP&nbsp;Payment.</h1>
-        <p class="lede">
-          No EVM wallet. No FLR. Sign one transaction in your XRPL wallet; Flare Smart
-          Accounts mint FXRP and run your chosen action atomically. If the action
-          reverts, nothing is minted.
+      <!-- HERO -->
+      <section class="hero-lp lp">
+        <span class="eyebrow">● Live on Coston2 testnet</span>
+        <h1>Move <span class="grad">XRP</span> across chains.<br />One payment, anywhere.</h1>
+        <p class="sub">
+          Flareburn turns XRP into FXRP — a fully-backed, omnichain token you can mint,
+          bridge, redeem, and earn with. Sign one XRPL transaction; Flare Smart Accounts
+          do the rest. No EVM wallet required.
         </p>
+        <div class="hero-actions">
+          <a href="/gateway.html" class="btn btn-primary btn-lg">Mint FXRP →</a>
+          <a href="/portfolio.html" class="btn btn-lg">Track your balance</a>
+        </div>
+        <div class="stat-strip" id="statStrip">
+          <div class="stat"><div class="num" id="statPrice">$—</div><div class="lbl">XRP / USD</div></div>
+          <div class="stat"><div class="num" id="statSupply">—</div><div class="lbl">FXRP supply</div></div>
+          <div class="stat"><div class="num" id="statChains">7</div><div class="lbl">Chains supported</div></div>
+          <div class="stat"><div class="num" id="statBacking">—</div><div class="lbl">Backing ratio</div></div>
+        </div>
       </section>
 
-      <section class="panel" id="step-account">
-        <div class="panel-head">
-          <span class="step">1</span>
-          <h2>Your Flare smart account</h2>
+      <!-- HOW IT WORKS -->
+      <section class="section lp" id="how">
+        <div class="section-head">
+          <h2>One XRP payment. Four things at once.</h2>
+          <p>Mint FXRP and chain an action into the same transaction. If the action fails, nothing mints — it's atomic.</p>
         </div>
-        <p class="hint">Every XRPL address gets a deterministic smart account on Flare.</p>
-        <div class="row">
-          <input
-            id="xrplAddress"
-            type="text"
-            placeholder="r…  (your XRPL address)"
-            spellcheck="false"
-            autocomplete="off"
-          />
-          <button id="btnAccount" class="btn">Resolve</button>
+        <div class="steps">
+          <div class="step-card"><div class="snum">STEP 01</div><div class="stit">Resolve your account</div><div class="sdesc">Every XRPL address gets a deterministic Flare smart account. No signup, no deploy.</div></div>
+          <div class="step-card"><div class="snum">STEP 02</div><div class="stit">Choose an action</div><div class="sdesc">Mint-only, transfer, redeem, vault deposit, or bridge to another chain — pick what you need.</div></div>
+          <div class="step-card"><div class="snum">STEP 03</div><div class="stit">Get a quote</div><div class="sdesc">See the minting fee, executor fee, and exact FXRP you'll receive before you sign anything.</div></div>
+          <div class="step-card"><div class="snum">STEP 04</div><div class="stit">Sign one payment</div><div class="sdesc">Sign a single XRP Payment in your XRPL wallet. The memo encodes everything; an executor finalizes on Flare.</div></div>
         </div>
-        <dl id="accountResult" class="kv hidden">
-          <div><dt>Personal account</dt><dd id="paAddress">—</dd></div>
-          <div><dt>Nonce</dt><dd id="paNonce">—</dd></div>
-          <div><dt>FXRP balance</dt><dd id="paBalance">—</dd></div>
-        </dl>
       </section>
 
-      <section class="panel" id="step-action">
-        <div class="panel-head">
-          <span class="step">2</span>
-          <h2>Choose your action</h2>
+      <!-- PRODUCTS -->
+      <section class="section lp" id="products">
+        <div class="section-head">
+          <h2>Two products. One FXRP.</h2>
+          <p>Go from XRP to any chain, or watch it all in one place.</p>
         </div>
-        <div class="action-grid">
-          <label class="action-card" data-action="mint_only">
-            <input type="radio" name="action" value="mint_only" checked />
-            <span class="ac-title">Just mint FXRP</span>
-            <span class="ac-desc">Mint to your smart account. Decide later.</span>
-          </label>
-          <label class="action-card" data-action="transfer">
-            <input type="radio" name="action" value="transfer" />
-            <span class="ac-title">Mint → transfer FXRP</span>
-            <span class="ac-desc">Send minted FXRP to a Flare 0x address.</span>
-          </label>
-          <label class="action-card" data-action="redeem">
-            <input type="radio" name="action" value="redeem" />
-            <span class="ac-title">Mint → redeem to XRP</span>
-            <span class="ac-desc">Round-trip: move XRP to another r-address.</span>
-          </label>
-          <label class="action-card" data-action="redeem_with_tag">
-            <input type="radio" name="action" value="redeem_with_tag" />
-            <span class="ac-title">Mint → redeem to exchange</span>
-            <span class="ac-desc">Redeem to an XRPL address that needs a destination tag.</span>
-          </label>
-          <label class="action-card" data-action="vault_deposit">
-            <input type="radio" name="action" value="vault_deposit" />
-            <span class="ac-title">Mint → vault deposit</span>
-            <span class="ac-desc">Deposit minted FXRP into Firelight / Upshift.</span>
-          </label>
-          <label class="action-card" data-action="bridge">
-            <input type="radio" name="action" value="bridge" />
-            <span class="ac-title">Mint → bridge (OFT)</span>
-            <span class="ac-desc">Bridge minted FXRP to Base, BSC, Ethereum, HyperEVM via LayerZero.</span>
-          </label>
+        <div class="route-cards">
+          <a class="route r1" href="/gateway.html">
+            <div class="glow"></div>
+            <div class="label">Mint Gateway</div>
+            <h3>Turn XRP into FXRP</h3>
+            <p>Mint, transfer, redeem, vault, and bridge — all prepared from one XRPL payment. Calldata and memos generated for you to sign.</p>
+            <ul class="features">
+              <li>Mint + action atomically</li>
+              <li>Bridge FXRP to Base, BNB, Ethereum &amp; more</li>
+              <li>Redeem back to XRP at any exchange</li>
+              <li>Vault deposits (Firelight / Upshift)</li>
+            </ul>
+            <span class="go">Open Mint Gateway <span class="arr">→</span></span>
+          </a>
+          <a class="route r2" href="/portfolio.html">
+            <div class="glow"></div>
+            <div class="label">Portfolio Dashboard</div>
+            <h3>See FXRP everywhere</h3>
+            <p>Track your FXRP across every chain, bridge between them, redeem to XRP, and watch system reserves in real time.</p>
+            <ul class="features">
+              <li>Cross-chain balance table (7 chains)</li>
+              <li>Bridge widget with live route quotes</li>
+              <li>Redeem FXRP — standard or gasless</li>
+              <li>Proof-of-reserves &amp; relayer health</li>
+            </ul>
+            <span class="go">Open Dashboard <span class="arr">→</span></span>
+          </a>
         </div>
-
-        <div id="actionFields" class="action-fields"></div>
       </section>
 
-      <section class="panel" id="step-amount">
-        <div class="panel-head">
-          <span class="step">3</span>
-          <h2>Amount &amp; quote</h2>
+      <!-- FEATURES -->
+      <section class="section lp" id="features">
+        <div class="section-head">
+          <h2>Built for trust</h2>
+          <p>Every FXRP is backed 1:1 by XRP locked in the Core Vault. Auditable on-chain, always.</p>
         </div>
-        <div class="row">
-          <input id="amountXrp" type="text" inputmode="decimal" placeholder="XRP to send (e.g. 10)" />
-          <button id="btnQuote" class="btn btn-ghost">Quote</button>
+        <div class="cards">
+          <div class="paper">
+            <div class="ico">🔐</div>
+            <div class="tag">Non-custodial</div>
+            <h3>Your keys, your XRP</h3>
+            <p>We never see your keys. You sign in your own XRPL wallet; we only prepare the transaction and memo. Keys stay yours.</p>
+          </div>
+          <div class="paper">
+            <div class="ico">⛓️</div>
+            <div class="tag">Omnichain</div>
+            <h3>FXRP on LayerZero</h3>
+            <p>Bridge FXRP across Flare, Base, BNB Chain, Ethereum, and HyperEVM using LayerZero OFT — one token, many chains.</p>
+          </div>
+          <div class="paper">
+            <div class="ico">⚡</div>
+            <div class="tag">Gasless</div>
+            <h3>No FLR needed</h3>
+            <p>Smart-account holders can redeem FXRP to XRP without owning a single FLR. A relayer pays the Flare gas for you.</p>
+          </div>
+          <div class="paper">
+            <div class="ico">📊</div>
+            <div class="tag">Transparent</div>
+            <h3>Proof of reserves</h3>
+            <p>XRP locked in the Core Vault is verifiable on the XRPL ledger. The backing ratio and per-chain supply are live on the dashboard.</p>
+          </div>
+          <div class="paper">
+            <div class="ico">🏦</div>
+            <div class="tag">Yield</div>
+            <h3>Vault deposits</h3>
+            <p>Mint FXRP and deposit into Firelight or Upshift vaults in a single atomic transaction — start earning without extra steps.</p>
+          </div>
+          <div class="paper">
+            <div class="ico">🔌</div>
+            <div class="tag">Exchange-ready</div>
+            <h3>Redeem to any exchange</h3>
+            <p>Burn FXRP and receive XRP at Binance, Kraken, Coinbase, Bitstamp and more — with destination-tag validation built in.</p>
+          </div>
         </div>
-        <dl id="quoteResult" class="kv hidden">
-          <div><dt>Minting fee</dt><dd id="qMintFee">—</dd></div>
-          <div><dt>Executor fee</dt><dd id="qExecFee">—</dd></div>
-          <div><dt>You'll receive</dt><dd id="qReceive">—</dd></div>
-        </dl>
       </section>
 
-      <section class="panel" id="step-prepare">
-        <div class="panel-head">
-          <span class="step">4</span>
-          <h2>Prepare your XRPL Payment</h2>
+      <!-- CTA BAND -->
+      <section class="cta-band lp">
+        <h2>Start with one XRP payment.</h2>
+        <p>No accounts, no deposits, no wrapped wrappers. Just your XRPL wallet and Flareburn.</p>
+        <div class="hero-actions">
+          <a href="/gateway.html" class="btn btn-primary btn-lg">Mint FXRP →</a>
+          <a href="/portfolio.html" class="btn btn-lg">View portfolio →</a>
         </div>
-        <p class="hint">
-          We generate an unsigned XRPL Payment with the action encoded in the memo.
-          You sign it in your wallet — we never see your keys.
-        </p>
-        <button id="btnPrepare" class="btn btn-primary">Prepare payment</button>
-        <div id="prepareResult" class="result hidden"></div>
       </section>
     </main>
 
-    <footer>
-      <span>Reference demo · Coston2 testnet by default · no keys, no signing, no custody.</span>
-      <a href="https://dev.flare.network/smart-accounts/overview" target="_blank" rel="noopener">Smart Accounts docs ↗</a>
+    <footer class="lp-footer lp">
+      <div class="brand"><span class="brand-mark">◈</span> <span class="brand-name">Flareburn</span></div>
+      <div class="flinks">
+        <a href="/gateway.html">Mint Gateway</a>
+        <a href="/portfolio.html">Dashboard</a>
+        <a href="https://dev.flare.network/smart-accounts/overview" target="_blank" rel="noopener">Smart Accounts ↗</a>
+      </div>
+      <span>Reference demo · Coston2 testnet · no custody</span>
     </footer>
 
-    <script src="/app.js"></script>
+    <script>
+      // Live stat strip — pulls from the gateway API
+      (async () => {
+        try {
+          const [price, reserves] = await Promise.all([
+            fetch("/ftso-price").then((r) => r.json()),
+            fetch("/reserves").then((r) => r.json()),
+          ]);
+          const usd = Number(price.priceUsd);
+          if (isFinite(usd)) document.getElementById("statPrice").textContent = "$" + usd.toFixed(4);
+          const sup = Number(reserves.fxrpTotalSupply);
+          if (isFinite(sup)) document.getElementById("statSupply").textContent = sup.toLocaleString(undefined, { maximumFractionDigits: 0 });
+          const ratio = Number(reserves.backingRatio);
+          if (isFinite(ratio)) document.getElementById("statBacking").textContent = (ratio >= 1 ? ratio.toFixed(2) : ratio.toFixed(3)) + "×";
+        } catch (e) { /* stats optional */ }
+      })();
+    </script>
   </body>
 </html>

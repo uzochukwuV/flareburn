@@ -265,6 +265,26 @@ Use FDC ConfirmedBlockHeightExists attestations to cryptographically prove the X
 - **System data**: XRP price badge from `/ftso-price` (30s cache), vault dropdown from `/vaults` (60s cache, shows name + balance).
 - **Validation**: EVM address `^0x[a-fA-F0-9]{40}$`, destination tag integer 0..4294967295, positive amounts required.
 
+## FXRP Redeem + Memo Decoder (portfolio.html — COMPLETE)
+- **Redeem widget** (left, 8-col): burn existing FXRP → XRP. Two modes via toggle:
+  - **Standard**: `POST /prepare-redeem` → EVM calldata (`redeemAmount` / `redeemWithTag`) to sign in MetaMask. Pays Flare gas. Uses connected wallet address as `callerAddress`.
+  - **Gasless**: `POST /prepare-gasless-redeem` → 1-drop XRPL Payment to operator with 0xFF redeem-only UserOp. Shows payment JSON + memoHex + note. "Submit to Relayer" button calls `POST /submit-gasless-redeem` (proxies to executor; 503 if executor offline). Requires user's XRPL source address.
+- **Exchange picker**: `GET /exchanges` → grid of 5 exchanges (Binance/Kraken/Coinbase/Bitstamp/Bybit) with initials avatar + color + truncated deposit address. Selecting an exchange that `requiresTag` reveals the destination-tag input. "Custom Address" toggle switches to free-text r-address entry (with optional tag). Standard redeem uses `exchangeId`; gasless uses the exchange's `depositAddress` as `destinationAddress`.
+- **Validation**: amount > 0; exchange required if in exchange mode; tag required for exchanges that require it; XRPL r-address regex `^r[a-zA-Z0-9]{20,40}$` for custom + gasless source.
+- **Result panel**: function sig, target (assetManager/operator), calldata (or memoHex for gasless), XRPL Payment JSON (gasless only), note, warnings. Copy Calldata + Submit to Relayer (gasless only).
+- **Memo Decoder widget** (right, 4-col): `POST /decode-memo { memoHex }` → opcode, walletId, executorFeeUba, userOpEncodedLengthBytes, userOpEncoded. Only accepts 0xFF memos (mint_and_action / gasless). Paste a memo hex → inspect the embedded Flare UserOp. Copy UserOp button. Errors shown inline (e.g. "not a memo-field custom instruction: opcode 0x46").
+- **5 new endpoints wired**: `/exchanges`, `/prepare-redeem`, `/prepare-gasless-redeem`, `/submit-gasless-redeem`, `/decode-memo`.
+
+## Marketing Landing Page (index.html — COMPLETE)
+- Converted from the old gateway demo to a Uber-style product landing page.
+- **Hero**: gradient headline "Move XRP across chains. One payment, anywhere.", live stat strip binding `/ftso-price` + `/reserves` (XRP/USD, FXRP supply, chains count, backing ratio).
+- **How it works**: 4-step grid (resolve → choose action → quote → sign one payment).
+- **Products**: two large route cards — "Mint Gateway" → `/gateway.html`, "Portfolio Dashboard" → `/portfolio.html` — each with feature checklists and hover lift.
+- **Features**: 6 paper cards (non-custodial, omnichain/LayerZero, gasless, proof-of-reserves, vault deposits, exchange-ready) with emoji icons, tags, hover animations.
+- **CTA band + footer** with links to both products.
+- No `app.js` dependency; inline `<script>` for the stat strip. Reuses `styles.css` vars (accent/panel/border).
+- Side nav in portfolio.html: "Mint Gateway" link now routes to `/gateway.html`.
+
 ## Test Coverage Summary (172 total)
 - npm run smoke - 23 tests (memo bytes, quote math, live Coston2 RPC)
 - npm run test:crosschain - 48 tests (OFT balances, bridge calldata, LZ fees)

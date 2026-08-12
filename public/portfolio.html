@@ -169,7 +169,7 @@
                 <span>Dashboard</span>
             </a>
             <a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-data-md font-data-md group"
-                href="#">
+                href="/gateway.html">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
                 <span>Mint Gateway</span>
             </a>
@@ -515,6 +515,123 @@
                                 <tr><td colspan="3" class="p-4 text-center text-on-surface-variant">Checking relayer status…</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+            <!-- REDEEM + DECODE MEMO ROW -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter-md mt-gutter-md">
+                <!-- Redeem FXRP Widget (Left, 8 cols) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-8 flex flex-col relative overflow-hidden">
+                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center z-10">
+                        <h3 class="text-data-lg font-data-lg text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant">currency_exchange</span>
+                            Redeem FXRP → XRP
+                        </h3>
+                        <!-- Gasless toggle -->
+                        <div class="flex items-center gap-2 bg-surface-container-low border border-outline-variant rounded-full p-1">
+                            <button id="redeemModeStandard" class="px-3 py-1 rounded-full text-label-sm font-label-sm font-bold bg-primary text-on-primary transition-colors">Standard</button>
+                            <button id="redeemModeGasless" class="px-3 py-1 rounded-full text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-colors">Gasless</button>
+                        </div>
+                    </div>
+                    <div class="p-widget-padding flex-1 flex flex-col gap-4 z-10">
+                        <p id="redeemModeDesc" class="text-label-sm font-label-sm text-on-surface-variant">Burn existing FXRP on Flare and receive XRP. Sign the calldata in your EVM wallet (MetaMask). Pays Flare gas.</p>
+                        <!-- Amount -->
+                        <div class="bg-surface-container-lowest border border-outline-variant rounded p-4 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-label-sm font-label-sm text-on-surface-variant">Amount (FXRP to burn)</label>
+                                <span id="redeemBalance" class="text-label-sm font-label-sm text-on-surface-variant">Bal: —</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <input id="redeemAmount" class="bg-transparent border-none text-headline-lg font-headline-lg text-on-surface p-0 focus:ring-0 w-2/3" type="text" inputmode="decimal" placeholder="0.0" />
+                                <span class="text-data-md font-data-md text-on-surface-variant">FXRP</span>
+                            </div>
+                        </div>
+                        <!-- Destination: exchange picker or custom address -->
+                        <div>
+                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Redeem To</label>
+                            <div class="flex gap-2 mb-3">
+                                <button id="redeemDestExchange" class="flex-1 py-2 rounded border border-primary/50 bg-primary/5 text-primary-fixed-dim text-label-sm font-label-sm font-bold transition-colors">Exchange</button>
+                                <button id="redeemDestCustom" class="flex-1 py-2 rounded border border-outline-variant text-on-surface-variant text-label-sm font-label-sm hover:text-on-surface transition-colors">Custom Address</button>
+                            </div>
+                            <!-- Exchange grid -->
+                            <div id="redeemExchangeGrid" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
+                            <!-- Custom address -->
+                            <div id="redeemCustomWrap" class="hidden">
+                                <input id="redeemCustomAddr" class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="r… (XRPL destination address)" />
+                            </div>
+                        </div>
+                        <!-- Destination tag (conditional) -->
+                        <div id="redeemTagWrap" class="hidden">
+                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Destination Tag</label>
+                            <input id="redeemTag" class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="number" placeholder="0" />
+                        </div>
+                        <!-- Gasless-only: XRPL source address -->
+                        <div id="redeemXrplWrap" class="hidden">
+                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Your XRPL Address (gasless)</label>
+                            <input id="redeemXrplAddr" class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" type="text" placeholder="r…" />
+                        </div>
+                        <!-- Warnings -->
+                        <div id="redeemWarnings" class="hidden bg-error-container/30 border border-error/30 rounded p-3 text-label-sm font-label-sm text-error"></div>
+                        <!-- Result -->
+                        <div id="redeemResult" class="hidden bg-surface-container-lowest border border-outline-variant/50 rounded p-3 flex flex-col gap-2">
+                            <div class="flex justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Function</span>
+                                <span id="redeemFn" class="text-on-surface font-mono break-all text-right"></span>
+                            </div>
+                            <div class="flex justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Target</span>
+                                <span id="redeemTarget" class="text-on-surface font-mono break-all text-right"></span>
+                            </div>
+                            <div>
+                                <span class="text-label-sm font-label-sm text-on-surface-variant">Calldata</span>
+                                <pre id="redeemCalldata" class="mt-1 text-label-sm font-label-sm font-mono text-on-surface bg-surface-container-low rounded p-2 overflow-x-auto whitespace-pre-wrap break-all"></pre>
+                            </div>
+                            <div id="redeemPaymentWrap" class="hidden">
+                                <span class="text-label-sm font-label-sm text-on-surface-variant">XRPL Payment (sign in XRPL wallet)</span>
+                                <pre id="redeemPaymentJson" class="mt-1 text-label-sm font-label-sm font-mono text-on-surface bg-surface-container-low rounded p-2 overflow-x-auto whitespace-pre-wrap break-all"></pre>
+                            </div>
+                            <p id="redeemNote" class="text-label-sm font-label-sm text-on-surface-variant"></p>
+                            <div class="flex gap-2 mt-1">
+                                <button id="redeemCopyBtn" class="flex-1 bg-surface-container border border-outline-variant text-on-surface py-2 rounded font-label-sm font-semibold hover:bg-surface-container-high transition-colors">Copy Calldata</button>
+                                <button id="redeemSubmitBtn" class="hidden flex-1 bg-primary text-on-primary py-2 rounded font-label-sm font-semibold hover:bg-primary-fixed-dim transition-colors">Submit to Relayer</button>
+                            </div>
+                        </div>
+                        <!-- CTA -->
+                        <button id="redeemPrepareBtn" class="mt-auto w-full bg-secondary-container text-on-secondary-container py-3 rounded font-data-md font-bold hover:opacity-90 transition-opacity">
+                            Prepare Redeem
+                        </button>
+                    </div>
+                </div>
+                <!-- Decode Memo Widget (Right, 4 cols) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-4 flex flex-col relative overflow-hidden">
+                    <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center z-10">
+                        <h3 class="text-data-lg font-data-lg text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant">code</span>
+                            Memo Decoder
+                        </h3>
+                        <span class="text-label-sm font-label-sm text-on-surface-variant">0xFF</span>
+                    </div>
+                    <div class="p-widget-padding flex-1 flex flex-col gap-4 z-10">
+                        <p class="text-label-sm font-label-sm text-on-surface-variant">Paste a 0xFF memo hex from a prepared XRPL Payment to inspect the embedded Flare UserOp.</p>
+                        <div>
+                            <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Memo Hex</label>
+                            <textarea id="decodeMemoInput" class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-label-sm font-label-sm font-mono text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-none" rows="4" placeholder="ff0000…"></textarea>
+                        </div>
+                        <button id="decodeMemoBtn" class="w-full bg-primary text-on-primary py-2.5 rounded font-data-md font-bold hover:bg-primary-fixed-dim transition-colors">Decode</button>
+                        <div id="decodeMemoResult" class="hidden bg-surface-container-lowest border border-outline-variant/50 rounded p-3 flex flex-col gap-2 text-label-sm font-label-sm">
+                            <div class="flex justify-between"><span class="text-on-surface-variant">Opcode</span><span id="dmOpcode" class="text-on-surface font-mono"></span></div>
+                            <div class="flex justify-between"><span class="text-on-surface-variant">Wallet ID</span><span id="dmWalletId" class="text-on-surface font-mono"></span></div>
+                            <div class="flex justify-between"><span class="text-on-surface-variant">Executor Fee (UBA)</span><span id="dmExecFee" class="text-on-surface font-mono"></span></div>
+                            <div class="flex justify-between"><span class="text-on-surface-variant">UserOp Length</span><span id="dmLength" class="text-on-surface font-mono"></span></div>
+                            <div>
+                                <span class="text-on-surface-variant">UserOp Encoded</span>
+                                <pre id="dmUserOp" class="mt-1 font-mono text-on-surface bg-surface-container-low rounded p-2 overflow-x-auto whitespace-pre-wrap break-all"></pre>
+                            </div>
+                            <button id="dmCopyBtn" class="mt-1 bg-surface-container border border-outline-variant text-on-surface py-1.5 rounded font-label-sm font-semibold hover:bg-surface-container-high transition-colors">Copy UserOp</button>
+                        </div>
+                        <p id="decodeMemoError" class="hidden text-label-sm font-label-sm text-error"></p>
                     </div>
                 </div>
             </div>
