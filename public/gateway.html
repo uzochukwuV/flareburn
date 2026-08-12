@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mint Gateway - FXRP Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "secondary-container": "#6c04de",
+                        "on-primary-fixed-variant": "#00522e",
+                        "inverse-on-surface": "#313030",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-container": "#2af598",
+                        "on-secondary": "#41008b",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-variant": "#353534",
+                        "on-background": "#e5e2e1",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bacbbc",
+                        "surface-container": "#201f1f",
+                        "outline": "#849587",
+                        "surface-dim": "#131313",
+                        "on-tertiary-container": "#be0021",
+                        "background": "#131313",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-tertiary-fixed": "#410005",
+                        "primary-fixed-dim": "#00e38a",
+                        "on-secondary-fixed-variant": "#5d00c2",
+                        "surface-tint": "#00e38a",
+                        "tertiary-fixed-dim": "#ffb3af",
+                        "tertiary-container": "#ffcbc7",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#930017",
+                        "tertiary": "#fff1ef",
+                        "on-secondary-fixed": "#270058",
+                        "primary": "#d0ffdc",
+                        "surface-bright": "#3a3939",
+                        "secondary-fixed-dim": "#d4bbff",
+                        "primary-fixed": "#57ffa6",
+                        "outline-variant": "#3b4a3f",
+                        "on-primary-container": "#006c3f",
+                        "on-primary-fixed": "#002110",
+                        "surface-container-highest": "#353534",
+                        "on-secondary-container": "#d4baff",
+                        "secondary": "#d4bbff",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#006d3f",
+                        "secondary-fixed": "#ebdcff",
+                        "on-primary": "#00391e",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#68000d",
+                        "surface-container-high": "#2a2a2a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter-md": "1.5rem",
+                        "margin-page": "2rem",
+                        "widget-padding": "1.25rem",
+                        "unit": "4px",
+                        "mobile-margin": "1rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Geist"],
+                        "headline-xl": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "data-lg": ["JetBrains Mono"],
+                        "data-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "data-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-panel:hover {
+            border-color: rgba(0, 227, 138, 0.5); /* primary-fixed-dim with opacity */
+        }
+        .glow-accent {
+            box-shadow: 0 0 30px rgba(0, 227, 138, 0.1);
+        }
+        /* Zebra striping for tables */
+        .zebra-row:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        .zebra-row:nth-child(odd) {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        
+        /* Custom scrollbar for data tables */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen overflow-hidden flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (Active: Mint Gateway) -->
+<nav class="hidden md:flex flex-col h-full py-6 px-4 gap-4 bg-surface-container-lowest dark:bg-surface-container-lowest text-primary dark:text-primary-fixed-dim docked left-0 w-64 border-r border-outline-variant backdrop-blur-xl shadow-xl z-20 flex-shrink-0">
+<!-- Header -->
+<div class="flex items-center gap-3 mb-6 px-2">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0 border border-primary/30">
+<span class="material-symbols-outlined" data-icon="token" style="font-variation-settings: 'FILL' 1;">token</span>
+</div>
+<div>
+<h1 class="text-headline-lg font-headline-lg font-black text-primary tracking-tight">FXRP Terminal</h1>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Institutional DeFi</p>
+</div>
+</div>
+<!-- Main Navigation -->
+<div class="flex flex-col gap-2 flex-grow">
+<!-- Dashboard (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="dashboard">dashboard</span>
+<span class="text-data-md font-data-md">Dashboard</span>
+</a>
+<!-- Mint Gateway (Active) -->
+<a class="flex items-center gap-3 px-3 py-2.5 bg-secondary-container text-on-secondary-container rounded-lg font-bold Active: scale-95 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+<span class="text-data-md font-data-md">Mint Gateway</span>
+</a>
+<!-- Reserves (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="verified_user">verified_user</span>
+<span class="text-data-md font-data-md">Reserves</span>
+</a>
+<!-- Executors (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="robot_2">robot_2</span>
+<span class="text-data-md font-data-md">Executors</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="settings">settings</span>
+<span class="text-data-md font-data-md">Settings</span>
+</a>
+</div>
+<!-- CTA & Footer -->
+<div class="flex flex-col gap-4 mt-auto">
+<button class="w-full bg-primary text-on-primary font-data-md text-data-md py-2.5 rounded hover:bg-primary-fixed transition-colors">
+                Connect Wallet
+            </button>
+<div class="border-t border-outline-variant/50 pt-4 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+<span class="text-label-sm font-label-sm">Documentation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-error transition-colors" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="logout">logout</span>
+<span class="text-label-sm font-label-sm">Log Out</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex flex-col flex-1 h-full overflow-hidden relative">
+<!-- Subtle Animated Shader Background for the whole canvas -->
+
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-gutter-md h-16 bg-surface dark:bg-surface text-primary dark:text-primary-fixed-dim border-b border-outline-variant z-10 relative">
+<div class="flex items-center gap-4">
+<span class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed-dim tracking-tight">FXRP Mint Gateway</span>
+<div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/50">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">XRP: <span class="text-primary-fixed-dim">$1.20</span></span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<!-- Trailing Icons -->
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-200 Active: opacity-80">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-200 Active: opacity-80">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-200 Active: opacity-80 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</div>
+<!-- Profile Avatar Placeholder -->
+<div class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A small, stylized avatar image suitable for an institutional user profile in a high-tech financial terminal context. Abstract geometric shapes or a minimalist monogram." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_pLFNaI09xuhz2liemEgbtBzIWcPjXaAgKaciG1pZupuZCTWtGsYlO2i2u2bQ0hi5HlCuv6qe6yZBEmjOxSQkPKlMKqCuGDe5eyCIt850tfWM8-k-In1b2vhMjDhTl5Ykz9wHQzPGO1-2NFyf3mkSf7dCsv6ILqeZBypXYbo_xzHHSc0dvOps263s0gZVj6bza13scKelkWHjug3NoBTuffqNXrAhTcYcg3vcYr2Vlfodh-VQEjtdfA"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-page relative z-10 scroll-smooth">
+<div class="max-w-[1600px] mx-auto">
+<!-- 12-Column Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter-md">
+<!-- Left Column: Setup & Actions (7 cols) -->
+<div class="md:col-span-7 flex flex-col gap-gutter-md">
+<!-- Address Resolver Card -->
+<div class="glass-panel rounded-xl p-widget-padding flex flex-col gap-4 relative">
+<!-- Widget Controls -->
+<div class="absolute top-4 right-4 flex gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-move hover:text-primary transition-colors text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors text-sm" data-icon="settings">settings</span>
+</div>
+<div class="flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="search">search</span>
+<h2 class="text-data-lg font-data-lg text-on-surface">Address Resolver</h2>
+</div>
+<div class="flex flex-col gap-4 mt-2">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">XRPL Source Address</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Enter r-address..." type="text" value="rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 text-primary text-label-sm font-label-sm hover:text-primary-fixed transition-colors">Resolve</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-1">Smart Account Status</p>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-data-md font-data-md text-primary-fixed-dim">Active / Validated</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/30">
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-1">Current Nonce</p>
+<span class="text-data-md font-data-md text-on-surface">42,091</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Selector Card -->
+<div class="glass-panel rounded-xl p-widget-padding flex flex-col gap-4 relative glow-accent">
+<div class="absolute top-4 right-4 flex gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-move hover:text-primary transition-colors text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<div class="flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+<span class="material-symbols-outlined text-secondary-fixed-dim" data-icon="bolt">bolt</span>
+<h2 class="text-data-lg font-data-lg text-on-surface">Action Selector</h2>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+<!-- Active Action -->
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-primary-fixed-dim text-2xl" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="text-label-sm font-label-sm text-on-surface">Mint-only</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-fixed-dim/50 hover:bg-surface-variant/30 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="swap_horiz">swap_horiz</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Transfer</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-error/50 hover:bg-surface-variant/30 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="remove_circle">remove_circle</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Redeem</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-container/50 hover:bg-surface-variant/30 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="account_balance">account_balance</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Vault Deposit</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Quote & Review (5 cols) -->
+<div class="md:col-span-5 flex flex-col gap-gutter-md">
+<!-- Quote & Preparation Card -->
+<div class="glass-panel rounded-xl p-widget-padding flex flex-col gap-4 relative">
+<div class="absolute top-4 right-4 flex gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-move hover:text-primary transition-colors text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<div class="flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="calculate">calculate</span>
+<h2 class="text-data-lg font-data-lg text-on-surface">Quote &amp; Preparation</h2>
+</div>
+<div class="flex flex-col gap-4 mt-2">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Mint Amount (XRP)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-3 px-4 text-headline-lg font-headline-lg text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number" value="10000"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-data-md font-data-md text-on-surface-variant">XRP</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg border border-outline-variant/30 divide-y divide-outline-variant/30">
+<div class="flex justify-between items-center p-3">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Minting Fee (0.1%)</span>
+<span class="text-data-md font-data-md text-error">-10.00 XRP</span>
+</div>
+<div class="flex justify-between items-center p-3">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Executor Fee (Gas Est.)</span>
+<span class="text-data-md font-data-md text-error">-0.55 XRP</span>
+</div>
+<div class="flex justify-between items-center p-3 bg-primary/5 rounded-b-lg">
+<span class="text-label-sm font-label-sm text-primary-fixed-dim font-bold">Receive Amount</span>
+<span class="text-data-lg font-data-lg text-primary-fixed-dim font-bold">9,989.45 FXRP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Transaction Review (Payloads) -->
+<div class="glass-panel rounded-xl p-widget-padding flex flex-col gap-4 relative flex-grow">
+<div class="absolute top-4 right-4 flex gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-move hover:text-primary transition-colors text-sm" data-icon="drag_indicator">drag_indicator</span>
+</div>
+<div class="flex items-center gap-2 border-b border-outline-variant/30 pb-3">
+<span class="material-symbols-outlined text-secondary-fixed-dim" data-icon="code">code</span>
+<h2 class="text-data-lg font-data-lg text-on-surface">Transaction Review</h2>
+</div>
+<div class="flex flex-col gap-4 mt-2 overflow-y-auto flex-grow">
+<!-- JSON Payload -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Unsigned Payment JSON</label>
+<button class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
+<span class="material-symbols-outlined text-[14px] group-hover:scale-110 transition-transform" data-icon="content_copy">content_copy</span> Copy
+                                        </button>
+</div>
+<pre class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-x-auto text-label-sm font-label-sm text-on-surface-variant font-mono"><code>{
+  "TransactionType": "Payment",
+  "Account": "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
+  "Destination": "rHTjB6M9zRjQzQ2tYg4K4j6c5c7L2y7R8x",
+  "Amount": "10000000000",
+  "Fee": "12",
+  "Sequence": 42091,
+  "Memos": [
+    {
+      "Memo": {
+        "MemoData": "0xFF..."
+      }
+    }
+  ]
+}</code></pre>
+</div>
+<!-- Memo Hex -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">0xFF Memo Hex</label>
+<button class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
+<span class="material-symbols-outlined text-[14px] group-hover:scale-110 transition-transform" data-icon="content_copy">content_copy</span> Copy
+                                        </button>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-hidden text-ellipsis whitespace-nowrap text-label-sm font-label-sm text-on-surface-variant font-mono">
+                                        0xFF1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B
+                                    </div>
+</div>
+</div>
+<!-- Sign Action -->
+<button class="w-full mt-4 bg-primary text-on-primary font-data-lg text-data-lg py-3 rounded-lg hover:bg-primary-fixed transition-colors shadow-[0_0_15px_rgba(0,227,138,0.3)] hover:shadow-[0_0_25px_rgba(0,227,138,0.5)] flex justify-center items-center gap-2">
+<span class="material-symbols-outlined" data-icon="edit_document">edit_document</span>
+                                Sign via Wallet
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

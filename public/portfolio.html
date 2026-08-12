@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Omnichain Portfolio - FXRP Gateway</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "secondary-container": "#6c04de",
+                        "on-primary-fixed-variant": "#00522e",
+                        "inverse-on-surface": "#313030",
+                        "tertiary-fixed": "#ffdad7",
+                        "surface-container-lowest": "#0e0e0e",
+                        "primary-container": "#2af598",
+                        "on-secondary": "#41008b",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-variant": "#353534",
+                        "on-background": "#e5e2e1",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#bacbbc",
+                        "surface-container": "#201f1f",
+                        "outline": "#849587",
+                        "surface-dim": "#131313",
+                        "on-tertiary-container": "#be0021",
+                        "background": "#131313",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-tertiary-fixed": "#410005",
+                        "primary-fixed-dim": "#00e38a",
+                        "on-secondary-fixed-variant": "#5d00c2",
+                        "surface-tint": "#00e38a",
+                        "tertiary-fixed-dim": "#ffb3af",
+                        "tertiary-container": "#ffcbc7",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#930017",
+                        "tertiary": "#fff1ef",
+                        "on-secondary-fixed": "#270058",
+                        "primary": "#d0ffdc",
+                        "surface-bright": "#3a3939",
+                        "secondary-fixed-dim": "#d4bbff",
+                        "primary-fixed": "#57ffa6",
+                        "outline-variant": "#3b4a3f",
+                        "on-primary-container": "#006c3f",
+                        "on-primary-fixed": "#002110",
+                        "surface-container-highest": "#353534",
+                        "on-secondary-container": "#d4baff",
+                        "secondary": "#d4bbff",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#006d3f",
+                        "secondary-fixed": "#ebdcff",
+                        "on-primary": "#00391e",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#68000d",
+                        "surface-container-high": "#2a2a2a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter-md": "1.5rem",
+                        "margin-page": "2rem",
+                        "widget-padding": "1.25rem",
+                        "unit": "4px",
+                        "mobile-margin": "1rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Geist"],
+                        "headline-xl": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "data-lg": ["JetBrains Mono"],
+                        "data-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "data-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background-color: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .widget-glow {
+            box-shadow: inset 0 0 30px rgba(0, 227, 138, 0.05);
+        }
+
+        /* Sparklines */
+        .sparkline-up {
+            stroke: #d0ffdc;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .sparkline-down {
+            stroke: #ffb4ab;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .zebra-row:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .zebra-row:nth-child(odd) {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background text-on-surface font-body-md h-screen overflow-hidden flex selection:bg-primary-container selection:text-on-primary-container">
+    <!-- SideNavBar (Hidden on MD, Web anchor) -->
+    <nav
+        class="hidden md:flex bg-surface-container-lowest dark:bg-surface-container-lowest text-primary dark:text-primary-fixed-dim docked left-0 h-screen w-64 border-r border-outline-variant backdrop-blur-xl shadow-xl flex-col py-6 px-4 gap-4 z-50">
+        <div class="flex items-center gap-3 mb-8 px-2">
+            <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
+                <span class="material-symbols-outlined text-on-primary-container">webhook</span>
+            </div>
+            <div>
+                <h1 class="text-headline-lg font-headline-lg font-black text-primary tracking-tight leading-none">FXRP
+                    Terminal</h1>
+                <p class="text-label-sm font-label-sm text-on-surface-variant">Institutional DeFi</p>
+            </div>
+        </div>
+        <button
+            class="w-full bg-primary text-on-primary py-2 px-4 rounded font-label-sm font-semibold mb-6 hover:bg-primary-fixed-dim transition-colors">
+            Connect Wallet
+        </button>
+        <div class="flex-1 flex flex-col gap-2">
+            <!-- Active Tab: Dashboard -->
+            <a class="flex items-center gap-3 px-3 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold scale-95 transition-all duration-200 text-data-md font-data-md group"
+                href="#">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-data-md font-data-md group"
+                href="#">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>Mint Gateway</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-data-md font-data-md group"
+                href="#">
+                <span class="material-symbols-outlined">verified_user</span>
+                <span>Reserves</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-data-md font-data-md group"
+                href="#">
+                <span class="material-symbols-outlined">robot_2</span>
+                <span>Executors</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-data-md font-data-md group"
+                href="#">
+                <span class="material-symbols-outlined">settings</span>
+                <span>Settings</span>
+            </a>
+        </div>
+        <div class="mt-auto flex flex-col gap-2 border-t border-outline-variant/30 pt-4">
+            <a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-label-sm font-label-sm group"
+                href="#">
+                <span class="material-symbols-outlined text-[18px]">description</span>
+                <span>Documentation</span>
+            </a>
+            <a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/10 transition-all duration-200 rounded-lg text-label-sm font-label-sm group"
+                href="#">
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+                <span>Log Out</span>
+            </a>
+        </div>
+    </nav>
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        <!-- TopNavBar -->
+        <header
+            class="bg-surface dark:bg-surface text-primary dark:text-primary-fixed-dim docked full-width top-0 border-b border-outline-variant flat no shadows flex justify-between items-center w-full px-gutter-md h-16 shrink-0 z-40">
+            <div class="flex items-center gap-4">
+                <!-- Mobile Menu Toggle (Visible only on small screens) -->
+                <button class="md:hidden text-on-surface-variant hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <h2
+                    class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed-dim tracking-tight">
+                    Omnichain Portfolio</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="text-on-surface-variant hover:text-primary transition-colors duration-200">
+                    <span class="material-symbols-outlined">hub</span>
+                </button>
+                <button class="text-on-surface-variant hover:text-primary transition-colors duration-200">
+                    <span class="material-symbols-outlined">analytics</span>
+                </button>
+                <button class="text-on-surface-variant hover:text-primary transition-colors duration-200 relative">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+                </button>
+                <div
+                    class="w-8 h-8 rounded-full bg-surface-variant border border-outline flex items-center justify-center overflow-hidden ml-2 cursor-pointer">
+                    <span class="material-symbols-outlined text-on-surface-variant text-sm">person</span>
+                </div>
+            </div>
+        </header>
+        <!-- Scrollable Dashboard Content -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-gutter-md">
+            <!-- Grid Layout Container -->
+            <div class="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-4">
+                <!-- TOP ROW: Stats Cards -->
+                <!-- Card 1 -->
+                <div
+                    class="glass-panel rounded-lg p-widget-padding col-span-1 md:col-span-3 flex flex-col justify-between hover:border-primary/50 transition-colors">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total
+                            Portfolio Value</span>
+                        <span
+                            class="material-symbols-outlined text-on-surface-variant text-[18px]">account_balance</span>
+                    </div>
+                    <div>
+                        <div
+                            class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
+                            $1.24<span class="text-data-lg text-on-surface-variant">M</span>
+                        </div>
+                        <div class="text-label-sm font-label-sm text-primary flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                            +5.2% (24h)
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div
+                    class="glass-panel rounded-lg p-widget-padding col-span-1 md:col-span-3 flex flex-col justify-between hover:border-primary/50 transition-colors">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Total
+                            FXRP Supply</span>
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px]">toll</span>
+                    </div>
+                    <div>
+                        <div
+                            class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
+                            845,291<span class="text-data-lg text-on-surface-variant">.42</span>
+                        </div>
+                        <div class="text-label-sm font-label-sm text-primary flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_up</span>
+                            +1.1% (7d)
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div
+                    class="glass-panel rounded-lg p-widget-padding col-span-1 md:col-span-3 flex flex-col justify-between hover:border-primary/50 transition-colors widget-glow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Core
+                            Vault Ratio</span>
+                        <span class="material-symbols-outlined text-primary text-[18px]">security</span>
+                    </div>
+                    <div>
+                        <div class="text-headline-lg font-headline-lg font-bold text-primary mb-1">
+                            1.05x
+                        </div>
+                        <div class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                            Target: 1.01x - Overcollateralized
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div
+                    class="glass-panel rounded-lg p-widget-padding col-span-1 md:col-span-3 flex flex-col justify-between hover:border-primary/50 transition-colors">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">FTSO
+                            XRP Price</span>
+                        <span
+                            class="material-symbols-outlined text-on-surface-variant text-[18px]">currency_exchange</span>
+                    </div>
+                    <div>
+                        <div
+                            class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
+                            $0.612<span class="text-data-lg text-on-surface-variant">4</span>
+                        </div>
+                        <div class="text-label-sm font-label-sm text-error flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_down</span>
+                            -0.4% (1h)
+                        </div>
+                    </div>
+                </div>
+                <!-- MIDDLE ROW -->
+                <!-- Portfolio Table (Left) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-7 flex flex-col min-h-[400px]">
+                    <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center">
+                        <h3 class="text-data-lg font-data-lg text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant">layers</span>
+                            Cross-Chain Distribution
+                        </h3>
+                        <div class="flex gap-2">
+                            <button class="text-on-surface-variant hover:text-primary"><span
+                                    class="material-symbols-outlined text-[18px]">filter_list</span></button>
+                            <button class="text-on-surface-variant hover:text-primary cursor-grab"><span
+                                    class="material-symbols-outlined text-[18px]">drag_indicator</span></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="text-label-sm font-label-sm text-on-surface-variant border-b border-outline-variant/30 uppercase">
+                                    <th class="p-3 pl-widget-padding font-normal">Chain</th>
+                                    <th class="p-3 font-normal text-right">FXRP Balance</th>
+                                    <th class="p-3 font-normal text-right">USD Value</th>
+                                    <th class="p-3 pr-widget-padding font-normal text-right">% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-data-md font-data-md">
+                                <!-- Ethereum -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            ETH</div>
+                                        Ethereum
+                                    </td>
+                                    <td class="p-3 text-right">450,210.00</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$275,708</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>53.2%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-primary w-[53%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Arbitrum -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            ARB</div>
+                                        Arbitrum
+                                    </td>
+                                    <td class="p-3 text-right">185,400.50</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$113,540</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>21.9%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-primary w-[22%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Optimism -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            OP</div>
+                                        Optimism
+                                    </td>
+                                    <td class="p-3 text-right">82,100.25</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$50,280</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>9.7%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-secondary-container w-[10%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Polygon -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            MATIC</div>
+                                        Polygon
+                                    </td>
+                                    <td class="p-3 text-right">55,300.00</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$33,865</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>6.5%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-secondary-container w-[7%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Avalanche -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            AVAX</div>
+                                        Avalanche
+                                    </td>
+                                    <td class="p-3 text-right">40,000.00</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$24,496</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>4.7%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-outline w-[5%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- BSC -->
+                                <tr
+                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            BSC</div>
+                                        BSC
+                                    </td>
+                                    <td class="p-3 text-right">25,180.67</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$15,420</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>3.0%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-outline w-[3%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Base -->
+                                <tr class="zebra-row hover:bg-surface-variant/20 transition-colors">
+                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
+                                        <div
+                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                            BASE</div>
+                                        Base
+                                    </td>
+                                    <td class="p-3 text-right">7,100.00</td>
+                                    <td class="p-3 text-right text-on-surface-variant">$4,348</td>
+                                    <td class="p-3 pr-widget-padding text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>1.0%</span>
+                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
+                                                <div class="h-full bg-outline w-[1%]"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Bridge/Redeem Widget (Right) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-5 flex flex-col relative overflow-hidden">
+                    <!-- Subtle background decoration -->
+                    <div
+                        class="absolute -top-20 -right-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none">
+                    </div>
+                    <div
+                        class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center z-10">
+                        <div class="flex gap-4">
+                            <button
+                                class="text-data-lg font-data-lg text-primary border-b-2 border-primary pb-1">Bridge</button>
+                            <button
+                                class="text-data-lg font-data-lg text-on-surface-variant hover:text-on-surface pb-1 transition-colors">Redeem</button>
+                        </div>
+                        <button class="text-on-surface-variant hover:text-primary cursor-grab"><span
+                                class="material-symbols-outlined text-[18px]">drag_indicator</span></button>
+                    </div>
+                    <div class="p-widget-padding flex-1 flex flex-col gap-6 z-10">
+                        <!-- Chain Selectors -->
+                        <div class="flex flex-col md:flex-row items-center gap-4">
+                            <div
+                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center cursor-pointer hover:border-primary/50 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <div
+                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                        ETH</div>
+                                    <span class="text-data-md font-data-md">Ethereum</span>
+                                </div>
+                                <span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+                            </div>
+                            <div
+                                class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant flex items-center justify-center shrink-0">
+                                <span
+                                    class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_forward</span>
+                            </div>
+                            <div
+                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center cursor-pointer hover:border-primary/50 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <div
+                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
+                                        ARB</div>
+                                    <span class="text-data-md font-data-md">Arbitrum</span>
+                                </div>
+                                <span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+                            </div>
+                        </div>
+                        <!-- Amount Input -->
+                        <div
+                            class="bg-surface-container-lowest border border-outline-variant rounded p-4 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                            <div class="flex justify-between mb-2">
+                                <label class="text-label-sm font-label-sm text-on-surface-variant">Amount (FXRP)</label>
+                                <span class="text-label-sm font-label-sm text-on-surface-variant">Bal: 450,210.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <input
+                                    class="bg-transparent border-none text-headline-lg font-headline-lg text-on-surface p-0 focus:ring-0 w-2/3"
+                                    type="text" value="10000" />
+                                <button
+                                    class="text-label-sm font-label-sm text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded hover:bg-primary/20 transition-colors">Max</button>
+                            </div>
+                        </div>
+                        <!-- Route Info -->
+                        <div
+                            class="bg-surface-container-lowest/50 rounded p-3 space-y-2 border border-outline-variant/30">
+                            <div class="flex justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Est. Receive</span>
+                                <span class="text-on-surface">10,000.00 FXRP</span>
+                            </div>
+                            <div class="flex justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Network Fee</span>
+                                <span class="text-on-surface">~$4.20 (0.0015 ETH)</span>
+                            </div>
+                            <div class="flex justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Est. Time</span>
+                                <span class="text-primary flex items-center gap-1"><span
+                                        class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> ~2 Mins</span>
+                            </div>
+                        </div>
+                        <!-- CTA -->
+                        <button
+                            class="mt-auto w-full bg-primary text-on-primary py-3 rounded font-data-md font-bold hover:bg-primary-fixed-dim transition-colors shadow-[0_0_15px_rgba(208,255,220,0.2)]">
+                            Prepare Calldata
+                        </button>
+                    </div>
+                </div>
+                <!-- BOTTOM ROW -->
+                <!-- Proof of Reserves Chart (Left) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-6 flex flex-col min-h-[300px]">
+                    <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center">
+                        <h3 class="text-data-lg font-data-lg text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant">monitoring</span>
+                            System Backing History
+                        </h3>
+                        <div class="flex gap-2">
+                            <button class="text-on-surface-variant hover:text-primary"><span
+                                    class="material-symbols-outlined text-[18px]">filter_list</span></button>
+                            <button class="text-on-surface-variant hover:text-primary cursor-grab"><span
+                                    class="material-symbols-outlined text-[18px]">drag_indicator</span></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 p-widget-padding flex flex-col justify-end relative">
+                        <!-- Legend -->
+                        <div class="absolute top-4 right-4 flex gap-4 text-label-sm font-label-sm">
+                            <div class="flex items-center gap-1 text-primary"><span
+                                    class="w-2 h-2 rounded-full bg-primary"></span>XRP Locked</div>
+                            <div class="flex items-center gap-1 text-secondary-container"><span
+                                    class="w-2 h-2 rounded-full bg-secondary-container"></span>FXRP Minted</div>
+                        </div>
+                        <!-- Pseudo-Chart Visualization -->
+                        <div class="h-32 w-full relative flex items-end justify-between px-2">
+                            <!-- Horizontal Grid Lines -->
+                            <div
+                                class="absolute inset-0 flex flex-col justify-between pointer-events-none border-b border-outline-variant/20 pb-4">
+                                <div class="border-t border-outline-variant/10 w-full"></div>
+                                <div class="border-t border-outline-variant/10 w-full"></div>
+                                <div class="border-t border-outline-variant/10 w-full"></div>
+                            </div>
+                            <!-- Bars (Backing vs Supply) -->
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[40%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[45%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[45%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[50%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[42%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[48%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[60%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[65%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[65%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[70%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[62%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[68%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[75%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[82%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[80%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div class="w-1.5 bg-primary h-[85%] absolute bottom-0 z-10"></div>
+                            </div>
+                            <div class="w-4 flex items-end justify-center relative group">
+                                <div
+                                    class="w-full bg-secondary-container h-[85%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                                </div>
+                                <div
+                                    class="w-1.5 bg-primary h-[95%] absolute bottom-0 z-10 shadow-[0_0_10px_rgba(208,255,220,0.5)]">
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="flex justify-between text-label-sm font-label-sm text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/30">
+                            <span>Oct 1</span>
+                            <span>Nov 1</span>
+                            <span>Dec 1</span>
+                            <span>Now</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Executor Health (Right) -->
+                <div class="glass-panel rounded-lg col-span-1 md:col-span-6 flex flex-col min-h-[300px]">
+                    <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center">
+                        <h3 class="text-data-lg font-data-lg text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-on-surface-variant">memory</span>
+                            Relayer Network Health
+                        </h3>
+                        <div class="flex gap-2">
+                            <button class="text-on-surface-variant hover:text-primary"><span
+                                    class="material-symbols-outlined text-[18px]">filter_list</span></button>
+                            <button class="text-on-surface-variant hover:text-primary cursor-grab"><span
+                                    class="material-symbols-outlined text-[18px]">drag_indicator</span></button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-x-auto p-2">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="text-label-sm font-label-sm text-on-surface-variant border-b border-outline-variant/20 uppercase">
+                                    <th class="p-2 font-normal">Node Name</th>
+                                    <th class="p-2 font-normal">Status</th>
+                                    <th class="p-2 font-normal text-right">Processed (24h)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-data-md font-data-md">
+                                <tr
+                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
+                                    <td class="p-2 font-mono text-on-surface">Alpha-Relay-01</td>
+                                    <td class="p-2">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                            Healthy
+                                        </div>
+                                    </td>
+                                    <td class="p-2 text-right text-on-surface-variant">12,450</td>
+                                </tr>
+                                <tr
+                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
+                                    <td class="p-2 font-mono text-on-surface">Beta-Relay-02</td>
+                                    <td class="p-2">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                            Healthy
+                                        </div>
+                                    </td>
+                                    <td class="p-2 text-right text-on-surface-variant">11,892</td>
+                                </tr>
+                                <tr
+                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
+                                    <td class="p-2 font-mono text-on-surface">Gamma-Relay-03</td>
+                                    <td class="p-2">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 bg-error/10 text-error px-2 py-0.5 rounded text-label-sm border border-error/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                            Degraded
+                                        </div>
+                                    </td>
+                                    <td class="p-2 text-right text-on-surface-variant">4,120</td>
+                                </tr>
+                                <tr class="hover:bg-surface-variant/20 transition-colors">
+                                    <td class="p-2 font-mono text-on-surface">Delta-Relay-04</td>
+                                    <td class="p-2">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                            Healthy
+                                        </div>
+                                    </td>
+                                    <td class="p-2 text-right text-on-surface-variant">13,005</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
