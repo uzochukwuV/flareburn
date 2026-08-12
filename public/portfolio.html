@@ -157,6 +157,7 @@
             </div>
         </div>
         <button
+            id="connectWalletBtn"
             class="w-full bg-primary text-on-primary py-2 px-4 rounded font-label-sm font-semibold mb-6 hover:bg-primary-fixed-dim transition-colors">
             Connect Wallet
         </button>
@@ -216,20 +217,32 @@
                     Omnichain Portfolio</h2>
             </div>
             <div class="flex items-center gap-4">
-                <button class="text-on-surface-variant hover:text-primary transition-colors duration-200">
-                    <span class="material-symbols-outlined">hub</span>
-                </button>
-                <button class="text-on-surface-variant hover:text-primary transition-colors duration-200">
-                    <span class="material-symbols-outlined">analytics</span>
-                </button>
+                <span id="networkBadge"
+                    class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded border border-outline-variant">network</span>
+                <div id="walletPill" class="hidden items-center gap-2 bg-surface-container-low border border-outline-variant rounded-full pl-3 pr-1 py-1">
+                    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    <span id="walletAddr" class="text-label-sm font-label-sm font-mono text-on-surface"></span>
+                    <button id="walletMenuBtn"
+                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center hover:bg-surface-container-high transition-colors">
+                        <span class="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+                    </button>
+                </div>
+                <div id="walletMenu" class="hidden absolute top-14 right-4 z-50 bg-surface-container-low border border-outline-variant rounded-lg shadow-xl w-56 flex flex-col py-2">
+                    <div class="px-3 py-2 border-b border-outline-variant/30">
+                        <p class="text-label-sm font-label-sm text-on-surface-variant">Connected</p>
+                        <p id="walletMenuAddr" class="text-data-md font-data-md font-mono text-on-surface break-all"></p>
+                    </div>
+                    <button id="copyAddrBtn" class="flex items-center gap-2 px-3 py-2 text-data-md font-data-md text-on-surface hover:bg-surface-variant/20 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">content_copy</span> Copy address
+                    </button>
+                    <button id="disconnectBtn" class="flex items-center gap-2 px-3 py-2 text-data-md font-data-md text-error hover:bg-surface-variant/20 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">logout</span> Disconnect
+                    </button>
+                </div>
                 <button class="text-on-surface-variant hover:text-primary transition-colors duration-200 relative">
                     <span class="material-symbols-outlined">notifications</span>
                     <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full animate-pulse"></span>
                 </button>
-                <div
-                    class="w-8 h-8 rounded-full bg-surface-variant border border-outline flex items-center justify-center overflow-hidden ml-2 cursor-pointer">
-                    <span class="material-symbols-outlined text-on-surface-variant text-sm">person</span>
-                </div>
             </div>
         </header>
         <!-- Scrollable Dashboard Content -->
@@ -247,13 +260,13 @@
                             class="material-symbols-outlined text-on-surface-variant text-[18px]">account_balance</span>
                     </div>
                     <div>
-                        <div
+                        <div id="totalValue"
                             class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
-                            $1.24<span class="text-data-lg text-on-surface-variant">M</span>
+                            $0.00
                         </div>
-                        <div class="text-label-sm font-label-sm text-primary flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">trending_up</span>
-                            +5.2% (24h)
+                        <div class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_flat</span>
+                            <span id="totalValueTrend">connect wallet</span>
                         </div>
                     </div>
                 </div>
@@ -266,13 +279,13 @@
                         <span class="material-symbols-outlined text-on-surface-variant text-[18px]">toll</span>
                     </div>
                     <div>
-                        <div
+                        <div id="totalSupply"
                             class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
-                            845,291<span class="text-data-lg text-on-surface-variant">.42</span>
+                            —
                         </div>
-                        <div class="text-label-sm font-label-sm text-primary flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">trending_up</span>
-                            +1.1% (7d)
+                        <div class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_flat</span>
+                            <span id="supplyTrend">canonical</span>
                         </div>
                     </div>
                 </div>
@@ -285,11 +298,12 @@
                         <span class="material-symbols-outlined text-primary text-[18px]">security</span>
                     </div>
                     <div>
-                        <div class="text-headline-lg font-headline-lg font-bold text-primary mb-1">
-                            1.05x
+                        <div id="coreRatio"
+                            class="text-headline-lg font-headline-lg font-bold text-primary mb-1">
+                            —
                         </div>
-                        <div class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
-                            Target: 1.01x - Overcollateralized
+                        <div id="ratioSub" class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                            Loading…
                         </div>
                     </div>
                 </div>
@@ -303,13 +317,13 @@
                             class="material-symbols-outlined text-on-surface-variant text-[18px]">currency_exchange</span>
                     </div>
                     <div>
-                        <div
+                        <div id="ftsoPrice"
                             class="text-headline-lg font-headline-lg font-bold text-on-surface mb-1 flex items-baseline gap-1">
-                            $0.612<span class="text-data-lg text-on-surface-variant">4</span>
+                            —
                         </div>
-                        <div class="text-label-sm font-label-sm text-error flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px]">trending_down</span>
-                            -0.4% (1h)
+                        <div class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">trending_flat</span>
+                            <span id="ftsoTrend">FTSO</span>
                         </div>
                     </div>
                 </div>
@@ -339,146 +353,8 @@
                                     <th class="p-3 pr-widget-padding font-normal text-right">% of Total</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-data-md font-data-md">
-                                <!-- Ethereum -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            ETH</div>
-                                        Ethereum
-                                    </td>
-                                    <td class="p-3 text-right">450,210.00</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$275,708</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>53.2%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-primary w-[53%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Arbitrum -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            ARB</div>
-                                        Arbitrum
-                                    </td>
-                                    <td class="p-3 text-right">185,400.50</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$113,540</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>21.9%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-primary w-[22%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Optimism -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            OP</div>
-                                        Optimism
-                                    </td>
-                                    <td class="p-3 text-right">82,100.25</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$50,280</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>9.7%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-secondary-container w-[10%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Polygon -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            MATIC</div>
-                                        Polygon
-                                    </td>
-                                    <td class="p-3 text-right">55,300.00</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$33,865</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>6.5%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-secondary-container w-[7%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Avalanche -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            AVAX</div>
-                                        Avalanche
-                                    </td>
-                                    <td class="p-3 text-right">40,000.00</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$24,496</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>4.7%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-outline w-[5%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- BSC -->
-                                <tr
-                                    class="zebra-row hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            BSC</div>
-                                        BSC
-                                    </td>
-                                    <td class="p-3 text-right">25,180.67</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$15,420</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>3.0%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-outline w-[3%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Base -->
-                                <tr class="zebra-row hover:bg-surface-variant/20 transition-colors">
-                                    <td class="p-3 pl-widget-padding flex items-center gap-2">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                            BASE</div>
-                                        Base
-                                    </td>
-                                    <td class="p-3 text-right">7,100.00</td>
-                                    <td class="p-3 text-right text-on-surface-variant">$4,348</td>
-                                    <td class="p-3 pr-widget-padding text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <span>1.0%</span>
-                                            <div class="w-16 h-1 bg-surface-variant rounded-full overflow-hidden">
-                                                <div class="h-full bg-outline w-[1%]"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
+                            <tbody id="chainTableBody" class="text-data-md font-data-md">
+                                <tr><td colspan="4" class="p-6 text-center text-on-surface-variant">Connect a wallet to view balances.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -492,9 +368,9 @@
                     <div
                         class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center z-10">
                         <div class="flex gap-4">
-                            <button
+                            <button id="tabBridge"
                                 class="text-data-lg font-data-lg text-primary border-b-2 border-primary pb-1">Bridge</button>
-                            <button
+                            <button id="tabRedeem"
                                 class="text-data-lg font-data-lg text-on-surface-variant hover:text-on-surface pb-1 transition-colors">Redeem</button>
                         </div>
                         <button class="text-on-surface-variant hover:text-primary cursor-grab"><span
@@ -504,12 +380,13 @@
                         <!-- Chain Selectors -->
                         <div class="flex flex-col md:flex-row items-center gap-4">
                             <div
-                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center cursor-pointer hover:border-primary/50 transition-colors">
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                        ETH</div>
-                                    <span class="text-data-md font-data-md">Ethereum</span>
+                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center hover:border-primary/50 transition-colors">
+                                <div class="flex items-center gap-2 flex-1">
+                                    <div id="srcChainBadge"
+                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">—</div>
+                                    <select id="bridgeSrc"
+                                        class="bg-transparent text-data-md font-data-md text-on-surface border-none focus:ring-0 w-full cursor-pointer">
+                                    </select>
                                 </div>
                                 <span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
                             </div>
@@ -519,12 +396,13 @@
                                     class="material-symbols-outlined text-on-surface-variant text-[18px]">arrow_forward</span>
                             </div>
                             <div
-                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center cursor-pointer hover:border-primary/50 transition-colors">
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">
-                                        ARB</div>
-                                    <span class="text-data-md font-data-md">Arbitrum</span>
+                                class="flex-1 w-full bg-surface-container-low border border-outline-variant rounded p-3 flex justify-between items-center hover:border-primary/50 transition-colors">
+                                <div class="flex items-center gap-2 flex-1">
+                                    <div id="dstChainBadge"
+                                        class="w-6 h-6 rounded-full bg-surface-variant border border-outline flex items-center justify-center text-[10px]">—</div>
+                                    <select id="bridgeDst"
+                                        class="bg-transparent text-data-md font-data-md text-on-surface border-none focus:ring-0 w-full cursor-pointer">
+                                    </select>
                                 </div>
                                 <span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
                             </div>
@@ -534,35 +412,34 @@
                             class="bg-surface-container-lowest border border-outline-variant rounded p-4 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
                             <div class="flex justify-between mb-2">
                                 <label class="text-label-sm font-label-sm text-on-surface-variant">Amount (FXRP)</label>
-                                <span class="text-label-sm font-label-sm text-on-surface-variant">Bal: 450,210.00</span>
+                                <span id="bridgeBalance" class="text-label-sm font-label-sm text-on-surface-variant">Bal: —</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <input
+                                <input id="bridgeAmount"
                                     class="bg-transparent border-none text-headline-lg font-headline-lg text-on-surface p-0 focus:ring-0 w-2/3"
-                                    type="text" value="10000" />
-                                <button
+                                    type="text" inputmode="decimal" placeholder="0.0" />
+                                <button id="maxBtn"
                                     class="text-label-sm font-label-sm text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded hover:bg-primary/20 transition-colors">Max</button>
                             </div>
                         </div>
                         <!-- Route Info -->
-                        <div
+                        <div id="routeInfo"
                             class="bg-surface-container-lowest/50 rounded p-3 space-y-2 border border-outline-variant/30">
                             <div class="flex justify-between text-label-sm font-label-sm">
                                 <span class="text-on-surface-variant">Est. Receive</span>
-                                <span class="text-on-surface">10,000.00 FXRP</span>
+                                <span id="estReceive" class="text-on-surface">—</span>
                             </div>
                             <div class="flex justify-between text-label-sm font-label-sm">
                                 <span class="text-on-surface-variant">Network Fee</span>
-                                <span class="text-on-surface">~$4.20 (0.0015 ETH)</span>
+                                <span id="networkFee" class="text-on-surface">—</span>
                             </div>
                             <div class="flex justify-between text-label-sm font-label-sm">
                                 <span class="text-on-surface-variant">Est. Time</span>
-                                <span class="text-primary flex items-center gap-1"><span
-                                        class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> ~2 Mins</span>
+                                <span id="estTime" class="text-on-surface-variant">~2 Mins</span>
                             </div>
                         </div>
                         <!-- CTA -->
-                        <button
+                        <button id="prepareBtn"
                             class="mt-auto w-full bg-primary text-on-primary py-3 rounded font-data-md font-bold hover:bg-primary-fixed-dim transition-colors shadow-[0_0_15px_rgba(208,255,220,0.2)]">
                             Prepare Calldata
                         </button>
@@ -591,8 +468,9 @@
                             <div class="flex items-center gap-1 text-secondary-container"><span
                                     class="w-2 h-2 rounded-full bg-secondary-container"></span>FXRP Minted</div>
                         </div>
-                        <!-- Pseudo-Chart Visualization -->
-                        <div class="h-32 w-full relative flex items-end justify-between px-2">
+                        <!-- Chart Visualization (populated by JS from reserves.chainSupplies) -->
+                        <div id="backingChart"
+                            class="h-32 w-full relative flex items-end justify-between px-2">
                             <!-- Horizontal Grid Lines -->
                             <div
                                 class="absolute inset-0 flex flex-col justify-between pointer-events-none border-b border-outline-variant/20 pb-4">
@@ -600,70 +478,12 @@
                                 <div class="border-t border-outline-variant/10 w-full"></div>
                                 <div class="border-t border-outline-variant/10 w-full"></div>
                             </div>
-                            <!-- Bars (Backing vs Supply) -->
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[40%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[45%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[45%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[50%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[42%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[48%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[60%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[65%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[65%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[70%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[62%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[68%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[75%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[82%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[80%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div class="w-1.5 bg-primary h-[85%] absolute bottom-0 z-10"></div>
-                            </div>
-                            <div class="w-4 flex items-end justify-center relative group">
-                                <div
-                                    class="w-full bg-secondary-container h-[85%] absolute bottom-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                                </div>
-                                <div
-                                    class="w-1.5 bg-primary h-[95%] absolute bottom-0 z-10 shadow-[0_0_10px_rgba(208,255,220,0.5)]">
-                                </div>
-                            </div>
+                            <!-- Bars injected here -->
+                            <p class="text-label-sm font-label-sm text-on-surface-variant m-auto">Loading…</p>
                         </div>
-                        <div
+                        <div id="backingChartLabels"
                             class="flex justify-between text-label-sm font-label-sm text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/30">
-                            <span>Oct 1</span>
-                            <span>Nov 1</span>
-                            <span>Dec 1</span>
-                            <span>Now</span>
+                            <span>—</span>
                         </div>
                     </div>
                 </div>
@@ -691,54 +511,8 @@
                                     <th class="p-2 font-normal text-right">Processed (24h)</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-data-md font-data-md">
-                                <tr
-                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
-                                    <td class="p-2 font-mono text-on-surface">Alpha-Relay-01</td>
-                                    <td class="p-2">
-                                        <div
-                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                            Healthy
-                                        </div>
-                                    </td>
-                                    <td class="p-2 text-right text-on-surface-variant">12,450</td>
-                                </tr>
-                                <tr
-                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
-                                    <td class="p-2 font-mono text-on-surface">Beta-Relay-02</td>
-                                    <td class="p-2">
-                                        <div
-                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                            Healthy
-                                        </div>
-                                    </td>
-                                    <td class="p-2 text-right text-on-surface-variant">11,892</td>
-                                </tr>
-                                <tr
-                                    class="border-b border-outline-variant/10 hover:bg-surface-variant/20 transition-colors">
-                                    <td class="p-2 font-mono text-on-surface">Gamma-Relay-03</td>
-                                    <td class="p-2">
-                                        <div
-                                            class="inline-flex items-center gap-1.5 bg-error/10 text-error px-2 py-0.5 rounded text-label-sm border border-error/20">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
-                                            Degraded
-                                        </div>
-                                    </td>
-                                    <td class="p-2 text-right text-on-surface-variant">4,120</td>
-                                </tr>
-                                <tr class="hover:bg-surface-variant/20 transition-colors">
-                                    <td class="p-2 font-mono text-on-surface">Delta-Relay-04</td>
-                                    <td class="p-2">
-                                        <div
-                                            class="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded text-label-sm border border-primary/20">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                            Healthy
-                                        </div>
-                                    </td>
-                                    <td class="p-2 text-right text-on-surface-variant">13,005</td>
-                                </tr>
+                            <tbody id="relayerBody" class="text-data-md font-data-md">
+                                <tr><td colspan="3" class="p-4 text-center text-on-surface-variant">Checking relayer status…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -746,6 +520,74 @@
             </div>
         </main>
     </div>
+
+    <!-- Toast notifications -->
+    <div id="toast"
+        class="fixed bottom-6 right-6 z-[100] hidden bg-surface-container-high border border-outline-variant rounded-lg px-4 py-3 shadow-2xl max-w-sm text-data-md font-data-md text-on-surface flex items-center gap-2">
+        <span id="toastIcon" class="material-symbols-outlined text-primary text-[20px]">info</span>
+        <span id="toastMsg"></span>
+    </div>
+
+    <!-- Wallet connection modal -->
+    <div id="walletModal" class="hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl w-full max-w-md p-6 flex flex-col gap-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-headline-lg font-headline-lg font-bold text-on-surface">Connect Wallet</h3>
+                <button id="closeWalletModal" class="text-on-surface-variant hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="text-data-md font-data-md text-on-surface-variant -mt-2">Connect an EVM wallet (Flare / Coston2) to load your omnichain FXRP balances.</p>
+            <button data-wallet="metamask"
+                class="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-lg p-4 hover:border-primary/50 hover:bg-surface-container-high transition-all text-left">
+                <span class="w-8 h-8 rounded-full bg-secondary-container/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-secondary">account_balance_wallet</span>
+                </span>
+                <div>
+                    <p class="text-data-md font-data-md font-bold text-on-surface">MetaMask / EVM</p>
+                    <p class="text-label-sm font-label-sm text-on-surface-variant">Flare, Base, BNB, etc.</p>
+                </div>
+            </button>
+            <button data-wallet="xaman"
+                class="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-lg p-4 hover:border-primary/50 hover:bg-surface-container-high transition-all text-left">
+                <span class="w-8 h-8 rounded-full bg-secondary-container/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-secondary">nfc</span>
+                </span>
+                <div>
+                    <p class="text-data-md font-data-md font-bold text-on-surface">Xaman (XRP)</p>
+                    <p class="text-label-sm font-label-sm text-on-surface-variant">Scan QR with Xaman app</p>
+                </div>
+            </button>
+            <div class="border-t border-outline-variant/30 pt-3">
+                <label class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Or enter address manually</label>
+                <div class="flex gap-2 mt-2">
+                    <input id="manualAddress" type="text" placeholder="0x… (your EVM address)"
+                        class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-2 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none" />
+                    <button id="manualLoadBtn" class="bg-secondary-container text-on-secondary-container px-4 rounded font-label-sm font-semibold hover:opacity-90 transition-opacity">Load</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result modal (for bridge-prepare output) -->
+    <div id="resultModal" class="hidden fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-widget-padding border-b border-outline-variant/50 flex justify-between items-center">
+                <h3 id="resultTitle" class="text-headline-lg font-headline-lg font-bold text-on-surface">Result</h3>
+                <button id="closeResultModal" class="text-on-surface-variant hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-widget-padding overflow-y-auto">
+                <pre id="resultBody" class="text-label-sm font-label-sm font-mono text-on-surface bg-surface-container-lowest rounded p-3 overflow-x-auto whitespace-pre-wrap break-all"></pre>
+            </div>
+            <div class="p-widget-padding border-t border-outline-variant/50 flex justify-end gap-2">
+                <button id="copyResultBtn" class="bg-surface-container border border-outline-variant text-on-surface px-4 py-2 rounded font-label-sm font-semibold hover:bg-surface-container-high transition-colors">Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/portfolio.js"></script>
 </body>
 
 </html>

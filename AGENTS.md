@@ -1,19 +1,19 @@
-# Flare AI Skills — Repository Memory
+# Flare AI Skills ŌĆö Repository Memory
 
 ## Installed Skills (from flare-foundation/flare-ai-skills)
 Location: `.agents/skills/`
-- `flare-fassets-skill` — FAssets/FXRP minting, redemption, Core Vault, MintingTagManager
-- `flare-ftso-skill` — FTSO price feeds (block-latency ~1.8s)
-- `flare-fdc-skill` — Flare Data Connector (attestations, Merkle proofs)
-- `flare-smart-accounts-skill` — XRPL→Flare account abstraction (no FLR needed)
-- `flare-fcc-skill` — Flare Confidential Compute (TEE)
-- `flare-general-skill` — General Flare knowledge, networks, tooling
+- `flare-fassets-skill` ŌĆö FAssets/FXRP minting, redemption, Core Vault, MintingTagManager
+- `flare-ftso-skill` ŌĆö FTSO price feeds (block-latency ~1.8s)
+- `flare-fdc-skill` ŌĆö Flare Data Connector (attestations, Merkle proofs)
+- `flare-smart-accounts-skill` ŌĆö XRPLŌåÆFlare account abstraction (no FLR needed)
+- `flare-fcc-skill` ŌĆö Flare Confidential Compute (TEE)
+- `flare-general-skill` ŌĆö General Flare knowledge, networks, tooling
 
 
-## FDC Attestation Flow (VERIFIED � commit 1e7d415)
+## FDC Attestation Flow (VERIFIED č commit 1e7d415)
 End-to-end FXRP mint via FDC attestation is WORKING on Coston2:
 1. Prepare XRPPayment FDC request (attestationType="XRPPayment" bytes32, sourceId="testXRP" bytes32)
-2. Calculate attestation fee via `FdcRequestFeeConfigurations` contract (NOT FdcHub � it reverts)
+2. Calculate attestation fee via `FdcRequestFeeConfigurations` contract (NOT FdcHub č it reverts)
 3. Submit attestation to `FdcHub.requestAttestation` (costs 1 wei on Coston2)
 4. Calculate voting round: `(blockTimestamp - firstVotingRoundStartTs) / 90`
    - **firstVotingRoundStartTs = 1658430000** (read from FlareSystemsManager via ContractRegistry)
@@ -28,7 +28,7 @@ End-to-end FXRP mint via FDC attestation is WORKING on Coston2:
    - `response_hex` is ABI-encoded full attestation tuple (decode with AbiCoder)
    - `proof` is the Merkle proof array (bytes32[])
    - `attestation_type` is bytes32 "XRPPayment"
-8. Call `AssetManager.executeDirectMinting(proofTuple)` � mints FXRP to recipient
+8. Call `AssetManager.executeDirectMinting(proofTuple)` č mints FXRP to recipient
 
 ### DA Layer Response Format (CRITICAL)
 The DA Layer returns `{ response_hex, attestation_type, proof }`, NOT `{ merkleProof, data }`.
@@ -45,14 +45,14 @@ bool, bytes, bool, uint256, uint8) responseBody)`
 - FXRP token (FTestXRP): `0x0b6A3645c240605887a5532109323A3E12273dc7` (decimals=6)
 
 ### Common executeDirectMinting Revert Errors
-- `0x18dce79f` = `PaymentAlreadyConfirmed()` � XRPL tx already used for a mint
+- `0x18dce79f` = `PaymentAlreadyConfirmed()` č XRPL tx already used for a mint
 
 ## Key Technical Facts (FAssets / FXRP / XRP)
-- **FAssets**: trustless over-collateralized bridge XRPL/BTC/DOGE → Flare ERC-20 (FXRP, FBTC, FDOGE)
+- **FAssets**: trustless over-collateralized bridge XRPL/BTC/DOGE ŌåÆ Flare ERC-20 (FXRP, FBTC, FDOGE)
 - **FXRP**: ERC-20 representation of XRP on Flare; also deployed as LayerZero OFT (HyperEVM, HyperCore, Ethereum, Base, BSC, Monad, Katana)
 - **Standard minting (current)**: single XRPL payment to Core Vault (`AssetManager.directMintingPaymentAddress()`), params in destination tag or memo; executor calls `executeDirectMinting`. Legacy collateral-reservation flow archived.
 - **Direct minting memo formats**: 32-byte `0x4642505266410018` + 4 zero bytes + 20-byte recipient; 48-byte `0x4642505266410021` + recipient + executor
-- **MintingTagManager**: ERC-721 NFT tags mapping destination tag → recipient/executor; `AssetManager.getMintingTagManager()`
+- **MintingTagManager**: ERC-721 NFT tags mapping destination tag ŌåÆ recipient/executor; `AssetManager.getMintingTagManager()`
 - **Redemption**: `redeem` (lots), `redeemAmount` (arbitrary UBA), `redeemWithTag` (XRP exchange addresses with destination tag)
 - **Smart Accounts**: XRPL users interact with Flare without FLR; MasterAccountController; instruction types 0x0_ (FXRP), 0x1_ (Firelight/stXRP), 0x2_ (Upshift)
 - **FlareContractsRegistry**: `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` (same all networks)
@@ -60,7 +60,7 @@ bool, bytes, bool, uint256, uint8) responseBody)`
 - **Fees (Coston2)**: min fee 0.1 XRP, 0.25% minting fee, 0.1 XRP executor fee
 
 ## Skill Safety Model
-- All skills are **documentation/reference only** — no transaction execution, no key handling
+- All skills are **documentation/reference only** ŌĆö no transaction execution, no key handling
 - Write scripts dry-run by default (`DRY_RUN=false` to broadcast)
 - External data (memos, FDC proofs, RPC) treated as untrusted, decoded via fixed binary formats only
 
@@ -80,7 +80,7 @@ bool, bytes, bool, uint256, uint8) responseBody)`
 - 23/23 smoke tests pass incl. live Coston2 integration
 
 ## Cross-Chain FXRP Dashboard (built on top of gateway)
-- Dashboard at `/dashboard.html` — unified FXRP position view across all OFT chains
+- Dashboard at `/dashboard.html` ŌĆö unified FXRP position view across all OFT chains
 - New files: `lib/chains.ts`, `lib/crosschain-client.ts`, `public/dashboard.{html,css,js}`
 - New API: `GET /chains`, `GET /portfolio?address=0x...`, `POST /bridge-prepare`
 - **FXRP OFT mainnet deployments**: Flare (adapter) 0xd706..., Ethereum/Base/BSC/Monad 0xCE61..., HyperEVM 0xd706..., Katana 0x565f...
@@ -88,46 +88,46 @@ bool, bytes, bool, uint256, uint8) responseBody)`
 - **LayerZero V2 EIDs**: Flare 30295, Ethereum 30101, BSC 30102, Base 30184, HyperEVM 30367, Monad 30390, Katana 30375
 - Testnet EIDs: Coston2 40294, Hyperliquid testnet 40362
 - FXRP decimals = 6 (verified on Base/BSC mainnet)
-- Cross-chain mode: mainnet by default; `CROSSCHAIN_TESTNET=true` for Coston2↔Hyperliquid testnet
+- Cross-chain mode: mainnet by default; `CROSSCHAIN_TESTNET=true` for Coston2ŌåöHyperliquid testnet
 - Verified live: Flare (149M supply), Base (47K), BSC (83K), HyperEVM (1.1M)
-- Bridge flow: `quoteSend` → approve + `send(sendParam, fee, refundTo)` calldata; `extraOptions` for 200k executor gas
+- Bridge flow: `quoteSend` ŌåÆ approve + `send(sendParam, fee, refundTo)` calldata; `extraOptions` for 200k executor gas
 
-## FTSO Price Integration (Task 4 — COMPLETE)
+## FTSO Price Integration (Task 4 ŌĆö COMPLETE)
 - **FTSO endpoint**: `GET /ftso-price` returns `{ network, feedId, value, timestamp, priceUsd }`
 - **XRP/USD feed ID (Coston2)**: `0x015852502f55534400000000000000000000000000` (index 3, category 1)
-- Resolution: `FlareContractsRegistry.getContractAddressByName("FtsoV2")` → `FtsoV2.getFeedByIdInWei(feedId)` → 18-decimal price
+- Resolution: `FlareContractsRegistry.getContractAddressByName("FtsoV2")` ŌåÆ `FtsoV2.getFeedByIdInWei(feedId)` ŌåÆ 18-decimal price
 - Code: `lib/flare-client.ts` `getFtsoPrice()` method; `server/index.ts` `/ftso-price` route
 - **Dashboard display**: `fetchFtsoPrice(totalFxrp?)` in `public/dashboard.js`
-- **Key fix**: fetch FTSO price on page load (in `init()`), NOT only after portfolio load — avoids Coston2 RPC rate-limiting when portfolio queries (7 chains) saturate the provider
+- **Key fix**: fetch FTSO price on page load (in `init()`), NOT only after portfolio load ŌĆö avoids Coston2 RPC rate-limiting when portfolio queries (7 chains) saturate the provider
 - **FTSO reads from Coston2 provider** even when dashboard is in mainnet mode (prices mirror mainnet); acceptable for read-only display
-- Dashboard UI: `.src-tag` badge ("FTSO") next to price; `#xrpPrice` shows `$X.XXXX`, `#xrpValue` shows `≈ $USD` or `FTSO · block N`
+- Dashboard UI: `.src-tag` badge ("FTSO") next to price; `#xrpPrice` shows `$X.XXXX`, `#xrpValue` shows `Ōēł $USD` or `FTSO ┬Ę block N`
 - 71/71 tests pass (23 gateway + 48 cross-chain), typecheck OK
 
-## Executor Service (Task 5 — COMPLETE)
+## Executor Service (Task 5 ŌĆö COMPLETE)
 The executor is the relayer that finalizes FXRP direct mints on Flare. The gateway prepares
 unsigned XRPL payments; the executor monitors the XRPL, obtains FDC proofs, and calls
 `executeDirectMinting(proof)` / `executeDirectMintingWithData(proof, data)` on AssetManager.
 
 ### Architecture
-- **`lib/fdc-client.ts`** — FDC attestation lifecycle:
-  - `prepareXrpPaymentRequest()` → verifier API (`/verifier/xrp/XRPPayment/prepareRequest`)
-  - `submitAttestationRequest()` → `FdcHub.requestAttestation(data, {value: fee})` on Flare
-  - `waitForFinalization()` → polls `Relay.isFinalized(200, roundId)` (FDC protocol ID = 200)
-  - `fetchProof()` → DA Layer (`/api/v1/fdc/proof-by-request-round-raw`)
-  - `proofToTuple()` → converts proof to ethers tuple for `executeDirectMinting`
-- **`lib/xrpl-monitor.ts`** — XRPL payment monitor:
+- **`lib/fdc-client.ts`** ŌĆö FDC attestation lifecycle:
+  - `prepareXrpPaymentRequest()` ŌåÆ verifier API (`/verifier/xrp/XRPPayment/prepareRequest`)
+  - `submitAttestationRequest()` ŌåÆ `FdcHub.requestAttestation(data, {value: fee})` on Flare
+  - `waitForFinalization()` ŌåÆ polls `Relay.isFinalized(200, roundId)` (FDC protocol ID = 200)
+  - `fetchProof()` ŌåÆ DA Layer (`/api/v1/fdc/proof-by-request-round-raw`)
+  - `proofToTuple()` ŌåÆ converts proof to ethers tuple for `executeDirectMinting`
+- **`lib/xrpl-monitor.ts`** ŌĆö XRPL payment monitor:
   - `XrplMonitor` class: subscribes to Core Vault account via xrpl.js websocket
-  - `classifyMemo()` — pure function routing memos to execute modes (plain/0xFF/0xFE/0xE0-E2)
-  - `parseCoreVaultPayment()` — extracts DetectedPayment from XRPL account_tx
-- **`lib/executor.ts`** — `Executor` orchestrator class:
-  - `processPayment()` — full pipeline: detect → FDC request → finalize → proof → execute
+  - `classifyMemo()` ŌĆö pure function routing memos to execute modes (plain/0xFF/0xFE/0xE0-E2)
+  - `parseCoreVaultPayment()` ŌĆö extracts DetectedPayment from XRPL account_tx
+- **`lib/executor.ts`** ŌĆö `Executor` orchestrator class:
+  - `processPayment()` ŌĆö full pipeline: detect ŌåÆ FDC request ŌåÆ finalize ŌåÆ proof ŌåÆ execute
   - Journal persistence (JSON file) for crash recovery + idempotency
   - `DirectMintingDelayed` event handling: waits + retries
   - DRY_RUN mode (default): submits FDC request but skips execute broadcast
-- **`server/executor.ts`** — standalone service entry point with HTTP API:
-  - `GET /health` — status (executor address, network, dryRun)
-  - `GET /journal` — processed transactions
-  - `POST /process` — `{ transactionId }` manual trigger
+- **`server/executor.ts`** ŌĆö standalone service entry point with HTTP API:
+  - `GET /health` ŌĆö status (executor address, network, dryRun)
+  - `GET /journal` ŌĆö processed transactions
+  - `POST /process` ŌĆö `{ transactionId }` manual trigger
   - Runs on PORT 12001 (configurable)
 
 ### Key Contracts (Coston2)
@@ -140,25 +140,25 @@ unsigned XRPL payments; the executor monitors the XRPL, obtains FDC proofs, and 
 ### Memo Routing
 | Memo type | Opcode | Execute mode |
 |-----------|--------|-------------|
-| Plain direct mint (0x4642505266410018/0021 prefix) | — | `executeDirectMinting` |
+| Plain direct mint (0x4642505266410018/0021 prefix) | ŌĆö | `executeDirectMinting` |
 | Memo-field custom instruction (inline userOp) | 0xFF | `executeDirectMinting` |
 | Custom instruction (hash-commit, executor delivers bytes) | 0xFE | `executeDirectMintingWithData` |
 | Skip memo (recovery) | 0xE0 | `executeDirectMintingWithData(proof, "0x")` |
 | Fast-forward nonce (recovery) | 0xE1 | `executeDirectMintingWithData(proof, "0x")` |
 | Replace executor fee | 0xE2 | `executeDirectMinting` |
-| No memo + no tag (smart account default) | — | `executeDirectMinting` |
-| Destination tag (MintingTagManager) | — | `executeDirectMinting` |
+| No memo + no tag (smart account default) | ŌĆö | `executeDirectMinting` |
+| Destination tag (MintingTagManager) | ŌĆö | `executeDirectMinting` |
 
 ### Environment Variables
-- `EXECUTOR_PRIVATE_KEY` (required) — EVM wallet key for gas + attestation fees
+- `EXECUTOR_PRIVATE_KEY` (required) ŌĆö EVM wallet key for gas + attestation fees
 - `CORE_VAULT_ADDRESS` (required, or auto-resolved from AssetManager)
-- `DRY_RUN` — `"false"` to broadcast execute txs (default: `true`)
-- `FLARE_NETWORK` — coston2 | flare | songbird | coston
-- `XRPL_ENDPOINT` — XRPL websocket (default: testnet/mainnet by network)
-- `JOURNAL_PATH` — path to journal JSON (default: `./executor-journal.json`)
-- `VERIFIER_API_KEY` — FDC verifier API key
-- `PROOF_OWNER` — EVM address owning proofs (default: executor address)
-- `PORT` — HTTP port (default: 12001)
+- `DRY_RUN` ŌĆö `"false"` to broadcast execute txs (default: `true`)
+- `FLARE_NETWORK` ŌĆö coston2 | flare | songbird | coston
+- `XRPL_ENDPOINT` ŌĆö XRPL websocket (default: testnet/mainnet by network)
+- `JOURNAL_PATH` ŌĆö path to journal JSON (default: `./executor-journal.json`)
+- `VERIFIER_API_KEY` ŌĆö FDC verifier API key
+- `PROOF_OWNER` ŌĆö EVM address owning proofs (default: executor address)
+- `PORT` ŌĆö HTTP port (default: 12001)
 
 ### Running
 ```bash
@@ -171,9 +171,9 @@ EXECUTOR_PRIVATE_KEY=0x... CORE_VAULT_ADDRESS=rDhpmiPq4BVBDWMVdSrmkgt8thKyRzGV1p
 3. Executor calls verifier `prepareRequest` with `{ attestationType: "0x08", sourceId: "testXRP", requestBody: { transactionId, proofOwner } }`
 4. Verifier returns `abiEncodedRequest` (contains MIC)
 5. Executor parses attestationType + sourceId from encoded request, calls `FdcHub.calculateAttestationFee(type, source)` for the fee
-6. Executor calls `FdcHub.requestAttestation(encodedRequest, {value: fee})` — tx block timestamp determines votingRoundId
+6. Executor calls `FdcHub.requestAttestation(encodedRequest, {value: fee})` ŌĆö tx block timestamp determines votingRoundId
 7. Executor polls `Relay.isFinalized(200, roundId)` until true (~90-180s)
-8. Executor POSTs to DA Layer `{ votingRoundId, requestBytes }` → receives merkleProof + response data
+8. Executor POSTs to DA Layer `{ votingRoundId, requestBytes }` ŌåÆ receives merkleProof + response data
 9. Executor calls `AssetManager.executeDirectMinting(proof)` or `executeDirectMintingWithData(proof, data)`
 10. If `DirectMintingDelayed` event emitted, waits for `executionAllowedAt` and retries
 
@@ -184,7 +184,7 @@ Executor tests (`npm run test:executor`):
 - FDC verifier + DA Layer API reachability (skipped in network-restricted environments)
 
 ### Dependencies Added
-- `@flarenetwork/flare-periphery-contract-artifacts` (devDependency) — typed ABIs for IAssetManager, IXRPPayment, IFdcHub, IRelay, IFdcVerification
+- `@flarenetwork/flare-periphery-contract-artifacts` (devDependency) ŌĆö typed ABIs for IAssetManager, IXRPPayment, IFdcHub, IRelay, IFdcVerification
 
 
 ## Exchange Redemption Router (Task 6 - COMPLETE)
@@ -235,6 +235,35 @@ Verifies FXRP is fully backed by XRP locked in the FAssets Core Vault.
 
 ### Future Enhancement
 Use FDC ConfirmedBlockHeightExists attestations to cryptographically prove the XRPL balance instead of trusting the XRPL API. The FDC client infrastructure exists in lib/fdc-client.ts.
+
+## Omnichain Portfolio Dashboard (portfolio.html — COMPLETE)
+- **Files**: `public/portfolio.html` (template + IDs), `public/portfolio.js` (new, ~380 lines)
+- **Live**: `/portfolio.html` — replaces all hardcoded demo data with live API data
+- **7 endpoints wired**: `/status`, `/chains`, `/portfolio`, `/ftso-price`, `/reserves`, `/executor-status`, `POST /bridge-prepare`
+- **5 sections bound**: 4 stat cards (total value, supply, ratio, price), cross-chain table (7 chains), bridge widget (dropdowns + amount + route quote + calldata modal), backing history chart (bars from reserves.chainSupplies), relayer health table
+- **Wallet connect**: MetaMask/EVM via `window.ethereum` (EIP-1193), no npm deps; auto-reconnect from localStorage; account-change listener; manual 0x address entry fallback. Xaman stubbed (needs API keys per WALLET_CONNECTION_GUIDE.md)
+- **Reserves response fields**: `fxrpTotalSupply`, `coreVaultXrpBalance`, `backingRatio`, `status`, `chainSupplies[]` (used for chart bars), `bridgedTotal`, `coreVaultAddress`
+- **Portfolio response fields**: `totalFxrp`, `chains[].chainId/chainName/balance/balanceUba`, `chainsWithBalance`
+- Status color logic: ratio ≥1.0 green (healthy), 0.95-1.0 secondary (warning), <0.95 error (critical)
+- 60s polling for system data (price/reserves/executor); portfolio loads on wallet connect
+- Bridge route: debounced (350ms) POST /bridge-prepare → Est. Receive + native fee in source chain symbol
+- Relayer table shows offline state when executor not running (start with `npm run executor`)
+
+## FXRP Mint Gateway (gateway.html — COMPLETE)
+- **Files**: `public/gateway.html` (template + IDs), `public/gateway.js` (new, ~310 lines, vanilla JS, no deps)
+- **Live**: `/gateway.html` — replaces all hardcoded demo data with live API data
+- **6 endpoints wired**: `GET /status`, `GET /personal-account?xrplAddress=`, `POST /quote`, `POST /prepare-payment`, `GET /vaults`, `GET /ftso-price`
+- **3 sections bound**: Address Resolver, Action Selector + action-specific fields, Quote & Preparation, Transaction Review (payment JSON + memo hex + calls preview)
+- **4 actions supported**: mint_only (plain FBRP memo), transfer (ERC20 transfer to 0x recipient), redeem (assetManager.redeemAmount to r-address), vault_deposit (Firelight/Upshift via vaultId)
+- **Smart account flow**: resolve XRPL r-address → `GET /personal-account` returns `{ personalAccount, nonce, fxrpBalance }`. nonce drives the 0xFF memo. mint_only uses plain direct-minting memo (no nonce); all other actions use the 0xFF smart-account memo with nonce + userOp.
+- **Quote**: debounced (400ms) `POST /quote { paymentXrp }` → `{ mintingFeeXrp, executorFeeXrp, fxpReceivedXrp }` (null = below minimum). Receive displayed as "Below minimum" when null.
+- **Prepare**: `POST /prepare-payment { xrplAddress, amountXrp, action }` → `{ kind, payment (XRPL Payment), memoHex, callsPreview[], note }`. Auto-prepare fires 500ms after resolve+quote+action-fields change. Manual "Prepare Payment" button also available.
+- **Memo types**: mint_only memo starts with `46425052` ("FBRP"); mint_and_action memo starts with `ff0000...`. Redeem memo encodes the redeemer r-address as ASCII hex in the call data.
+- **Calls preview**: For mint_and_action, shows each Flare call (target address short form + calldata). transfer → FXRP token (0x0b6A...) with `0xa9059cbb` (transfer); redeem → assetManager (0xc1Ca...) with `0x01e261f6` (redeemAmount); vault_deposit → approve + deposit calls.
+- **Wallet connect**: XRPL address entry (validated `^r[a-zA-Z0-9]{20,40}$`) via modal; auto-resolve saved address from localStorage on load; Xaman stubbed (needs VITE_XAMAN_API_KEY/SECRET per WALLET_CONNECTION_GUIDE.md). Connect button shows short address after resolve.
+- **Clipboard**: Copy buttons for payment JSON + memo hex; "Sign via Wallet" copies the payment JSON for the user to sign in their XRPL wallet (no signing in-browser — read-only data + calldata preparation only).
+- **System data**: XRP price badge from `/ftso-price` (30s cache), vault dropdown from `/vaults` (60s cache, shows name + balance).
+- **Validation**: EVM address `^0x[a-fA-F0-9]{40}$`, destination tag integer 0..4294967295, positive amounts required.
 
 ## Test Coverage Summary (172 total)
 - npm run smoke - 23 tests (memo bytes, quote math, live Coston2 RPC)

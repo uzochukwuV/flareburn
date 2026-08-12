@@ -177,7 +177,7 @@
 </div>
 <!-- CTA & Footer -->
 <div class="flex flex-col gap-4 mt-auto">
-<button class="w-full bg-primary text-on-primary font-data-md text-data-md py-2.5 rounded hover:bg-primary-fixed transition-colors">
+<button id="connectWalletBtn" class="w-full bg-primary text-on-primary font-data-md text-data-md py-2.5 rounded hover:bg-primary-fixed transition-colors">
                 Connect Wallet
             </button>
 <div class="border-t border-outline-variant/50 pt-4 flex flex-col gap-2">
@@ -202,7 +202,7 @@
 <span class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed-dim tracking-tight">FXRP Mint Gateway</span>
 <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/50">
 <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-<span class="text-label-sm font-label-sm text-on-surface-variant">XRP: <span class="text-primary-fixed-dim">$1.20</span></span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">XRP: <span id="xrpPrice" class="text-primary-fixed-dim">$1.20</span></span>
 </div>
 </div>
 <div class="flex items-center gap-6">
@@ -247,21 +247,21 @@
 <div>
 <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">XRPL Source Address</label>
 <div class="relative">
-<input class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Enter r-address..." type="text" value="rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn"/>
-<button class="absolute right-2 top-1/2 -translate-y-1/2 text-primary text-label-sm font-label-sm hover:text-primary-fixed transition-colors">Resolve</button>
+<input id="xrplAddressInput" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Enter r-address..." type="text" value="rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn"/>
+<button id="resolveBtn" class="absolute right-2 top-1/2 -translate-y-1/2 text-primary text-label-sm font-label-sm hover:text-primary-fixed transition-colors">Resolve</button>
 </div>
 </div>
 <div class="grid grid-cols-2 gap-4">
 <div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/30">
 <p class="text-label-sm font-label-sm text-on-surface-variant mb-1">Smart Account Status</p>
 <div class="flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-primary"></span>
-<span class="text-data-md font-data-md text-primary-fixed-dim">Active / Validated</span>
+<span id="accountStatusDot" class="w-2 h-2 rounded-full bg-on-surface-variant"></span>
+<span id="accountStatusText" class="text-data-md font-data-md text-on-surface-variant">Not resolved</span>
 </div>
 </div>
 <div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/30">
 <p class="text-label-sm font-label-sm text-on-surface-variant mb-1">Current Nonce</p>
-<span class="text-data-md font-data-md text-on-surface">42,091</span>
+<span id="currentNonce" class="text-data-md font-data-md text-on-surface">—</span>
 </div>
 </div>
 </div>
@@ -277,22 +277,64 @@
 </div>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
 <!-- Active Action -->
-<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors">
+<button data-action="mint_only" class="action-btn flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors">
 <span class="material-symbols-outlined text-primary-fixed-dim text-2xl" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
 <span class="text-label-sm font-label-sm text-on-surface">Mint-only</span>
 </button>
-<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-fixed-dim/50 hover:bg-surface-variant/30 transition-colors">
+<button data-action="transfer" class="action-btn flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-fixed-dim/50 hover:bg-surface-variant/30 transition-colors">
 <span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="swap_horiz">swap_horiz</span>
 <span class="text-label-sm font-label-sm text-on-surface-variant">Transfer</span>
 </button>
-<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-error/50 hover:bg-surface-variant/30 transition-colors">
+<button data-action="redeem" class="action-btn flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-error/50 hover:bg-surface-variant/30 transition-colors">
 <span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="remove_circle">remove_circle</span>
 <span class="text-label-sm font-label-sm text-on-surface-variant">Redeem</span>
 </button>
-<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-container/50 hover:bg-surface-variant/30 transition-colors">
+<button data-action="vault_deposit" class="action-btn flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-surface-container border border-outline-variant/30 hover:border-secondary-container/50 hover:bg-surface-variant/30 transition-colors">
 <span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="account_balance">account_balance</span>
 <span class="text-label-sm font-label-sm text-on-surface-variant">Vault Deposit</span>
 </button>
+</div>
+<!-- Action-specific fields (shown/hidden by gateway.js) -->
+<div id="actionFields" class="hidden flex flex-col gap-3 mt-2">
+<!-- Transfer fields -->
+<div id="transferFields" class="action-fields hidden flex flex-col gap-3">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Flare Recipient (0x...)</label>
+<input id="transferToFlare" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0x..." type="text"/>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">FXRP Amount to Transfer</label>
+<input id="transferFxrpAmount" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Redeem fields -->
+<div id="redeemFields" class="action-fields hidden flex flex-col gap-3">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Redeemer XRPL Address (r...)</label>
+<input id="redeemXrplAddress" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="r..." type="text"/>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Destination Tag (optional)</label>
+<input id="redeemDestinationTag" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0" type="number"/>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">FXRP Amount to Redeem</label>
+<input id="redeemFxrpAmount" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Vault Deposit fields -->
+<div id="vaultFields" class="action-fields hidden flex flex-col gap-3">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Vault</label>
+<select id="vaultSelect" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
+<option value="">Select a vault...</option>
+</select>
+</div>
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">FXRP Amount to Deposit</label>
+<input id="vaultFxrpAmount" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number"/>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -311,22 +353,22 @@
 <div>
 <label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Mint Amount (XRP)</label>
 <div class="relative">
-<input class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-3 px-4 text-headline-lg font-headline-lg text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number" value="10000"/>
+<input id="mintAmountInput" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-3 px-4 text-headline-lg font-headline-lg text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="0.00" type="number" value="10000"/>
 <span class="absolute right-4 top-1/2 -translate-y-1/2 text-data-md font-data-md text-on-surface-variant">XRP</span>
 </div>
 </div>
 <div class="bg-surface-container rounded-lg border border-outline-variant/30 divide-y divide-outline-variant/30">
 <div class="flex justify-between items-center p-3">
-<span class="text-label-sm font-label-sm text-on-surface-variant">Minting Fee (0.1%)</span>
-<span class="text-data-md font-data-md text-error">-10.00 XRP</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Minting Fee</span>
+<span id="mintingFee" class="text-data-md font-data-md text-error">—</span>
 </div>
 <div class="flex justify-between items-center p-3">
 <span class="text-label-sm font-label-sm text-on-surface-variant">Executor Fee (Gas Est.)</span>
-<span class="text-data-md font-data-md text-error">-0.55 XRP</span>
+<span id="executorFee" class="text-data-md font-data-md text-error">—</span>
 </div>
 <div class="flex justify-between items-center p-3 bg-primary/5 rounded-b-lg">
 <span class="text-label-sm font-label-sm text-primary-fixed-dim font-bold">Receive Amount</span>
-<span class="text-data-lg font-data-lg text-primary-fixed-dim font-bold">9,989.45 FXRP</span>
+<span id="receiveAmount" class="text-data-lg font-data-lg text-primary-fixed-dim font-bold">—</span>
 </div>
 </div>
 </div>
@@ -341,45 +383,44 @@
 <h2 class="text-data-lg font-data-lg text-on-surface">Transaction Review</h2>
 </div>
 <div class="flex flex-col gap-4 mt-2 overflow-y-auto flex-grow">
+<!-- Prepare + status row -->
+<div class="flex items-center gap-2">
+<button id="prepareBtn" class="flex-1 bg-surface-container border border-primary/50 bg-primary/5 hover:bg-primary/10 text-primary-fixed-dim font-data-md text-data-md py-2 rounded-lg transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="build">build</span>
+Prepare Payment
+</button>
+<span id="prepareStatus" class="text-label-sm font-label-sm text-on-surface-variant"></span>
+</div>
 <!-- JSON Payload -->
 <div>
 <div class="flex justify-between items-end mb-2">
 <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Unsigned Payment JSON</label>
-<button class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
+<button id="copyPaymentBtn" class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
 <span class="material-symbols-outlined text-[14px] group-hover:scale-110 transition-transform" data-icon="content_copy">content_copy</span> Copy
                                         </button>
 </div>
-<pre class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-x-auto text-label-sm font-label-sm text-on-surface-variant font-mono"><code>{
-  "TransactionType": "Payment",
-  "Account": "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
-  "Destination": "rHTjB6M9zRjQzQ2tYg4K4j6c5c7L2y7R8x",
-  "Amount": "10000000000",
-  "Fee": "12",
-  "Sequence": 42091,
-  "Memos": [
-    {
-      "Memo": {
-        "MemoData": "0xFF..."
-      }
-    }
-  ]
-}</code></pre>
+<pre class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-x-auto text-label-sm font-label-sm text-on-surface-variant font-mono"><code id="paymentJson">Resolve an address and enter an amount, then click Prepare Payment.</code></pre>
 </div>
 <!-- Memo Hex -->
 <div>
 <div class="flex justify-between items-end mb-2">
 <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">0xFF Memo Hex</label>
-<button class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
+<button id="copyMemoBtn" class="text-label-sm font-label-sm text-primary hover:text-primary-fixed flex items-center gap-1 group">
 <span class="material-symbols-outlined text-[14px] group-hover:scale-110 transition-transform" data-icon="content_copy">content_copy</span> Copy
                                         </button>
 </div>
-<div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-hidden text-ellipsis whitespace-nowrap text-label-sm font-label-sm text-on-surface-variant font-mono">
-                                        0xFF1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B1C2D3E4F5A6B7C8D9E0F1A2B
-                                    </div>
+<div id="memoHex" class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 overflow-hidden text-ellipsis whitespace-nowrap text-label-sm font-label-sm text-on-surface-variant font-mono">—</div>
 </div>
+<!-- Calls Preview (shown for mint_and_action) -->
+<div id="callsPreviewWrap" class="hidden">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Calls Preview (Flare)</label>
+<div id="callsPreview" class="flex flex-col gap-2"></div>
+</div>
+<!-- Note -->
+<p id="prepareNote" class="text-label-sm font-label-sm text-on-surface-variant"></p>
 </div>
 <!-- Sign Action -->
-<button class="w-full mt-4 bg-primary text-on-primary font-data-lg text-data-lg py-3 rounded-lg hover:bg-primary-fixed transition-colors shadow-[0_0_15px_rgba(0,227,138,0.3)] hover:shadow-[0_0_25px_rgba(0,227,138,0.5)] flex justify-center items-center gap-2">
+<button id="signBtn" class="w-full mt-4 bg-primary text-on-primary font-data-lg text-data-lg py-3 rounded-lg hover:bg-primary-fixed transition-colors shadow-[0_0_15px_rgba(0,227,138,0.3)] hover:shadow-[0_0_25px_rgba(0,227,138,0.5)] flex justify-center items-center gap-2">
 <span class="material-symbols-outlined" data-icon="edit_document">edit_document</span>
                                 Sign via Wallet
                             </button>
@@ -389,4 +430,31 @@
 </div>
 </main>
 </div>
+<!-- Wallet Connection Modal -->
+<div id="walletModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+<div class="glass-panel rounded-xl p-widget-padding w-full max-w-md mx-4 flex flex-col gap-4 relative">
+<button id="walletModalClose" class="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Connect XRPL Wallet</h2>
+<p class="text-data-md font-data-md text-on-surface-variant">Enter your XRPL (r-) address to load smart account state, or connect via Xaman.</p>
+<div class="flex flex-col gap-3">
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">XRPL Address</label>
+<input id="walletAddressInput" class="w-full bg-surface-container-lowest border border-outline-variant/50 rounded-lg py-2 px-3 text-data-md font-data-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="r..." type="text"/>
+</div>
+<button id="walletLoadBtn" class="w-full bg-primary text-on-primary font-data-md text-data-md py-2.5 rounded hover:bg-primary-fixed transition-colors">Load</button>
+</div>
+<div class="border-t border-outline-variant/50 pt-3">
+<p class="text-label-sm font-label-sm text-on-surface-variant mb-2">Or connect via wallet provider</p>
+<button id="xamanConnectBtn" class="w-full bg-surface-container border border-outline-variant/30 hover:border-primary/50 text-on-surface font-data-md text-data-md py-2.5 rounded transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-base" data-icon="nfc">nfc</span>
+Xaman (XRP)
+</button>
+</div>
+</div>
+</div>
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 z-50 glass-panel rounded-lg px-4 py-3 text-data-md font-data-md text-on-surface shadow-2xl"></div>
+<script src="/gateway.js"></script>
 </body></html>
