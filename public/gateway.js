@@ -180,7 +180,7 @@
       state.accountState = data;
       state.resolvedAddress = addr;
       setAccountStatus(data);
-      localStorage.setItem(LS_KEY, addr);
+      window.WalletStore?.setXrpl?.(addr);
       toast("Smart account resolved");
       // Auto-prepare if amount already set
       schedulePrepare();
@@ -385,8 +385,9 @@
   // Wallet connection (XRPL — manual address entry, Xaman stubbed)
   // ---------------------------------------------------------------------------
   function openWalletModal() {
-    $("walletModal").classList.remove("hidden");
-    const saved = localStorage.getItem(LS_KEY);
+    $(
+"walletModal").classList.remove("hidden");
+    const saved = window.WalletStore?.getXrpl?.();
     if (saved && !$("walletAddressInput").value) $("walletAddressInput").value = saved;
   }
   function closeWalletModal() {
@@ -459,7 +460,7 @@
     selectAction("mint_only");
     await loadSystem();
     // auto-resolve saved address
-    const saved = localStorage.getItem(LS_KEY);
+    const saved = window.WalletStore?.getXrpl?.();
     if (saved && XRPL_RE.test(saved)) {
       $("xrplAddressInput").value = saved;
       $("connectWalletBtn").textContent = shortAddr(saved);

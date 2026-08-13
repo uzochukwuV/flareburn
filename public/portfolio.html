@@ -216,9 +216,12 @@
                     class="text-headline-lg font-headline-lg font-bold text-primary dark:text-primary-fixed-dim tracking-tight">
                     Omnichain Portfolio</h2>
             </div>
-            <div class="flex items-center gap-4">
-                <span id="networkBadge"
+            <div class="flex items-center gap-4">                <span id="networkBadge"
                     class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded border border-outline-variant">network</span>
+                <button id="switchChainBtn" class="hidden items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 text-label-sm font-label-sm hover:bg-primary/20 transition-colors" type="button">
+                    <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+                    <span>Switch to Coston2</span>
+                </button>
                 <div id="walletPill" class="hidden items-center gap-2 bg-surface-container-low border border-outline-variant rounded-full pl-3 pr-1 py-1">
                     <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                     <span id="walletAddr" class="text-label-sm font-label-sm font-mono text-on-surface"></span>
@@ -441,8 +444,15 @@
                         <!-- CTA -->
                         <button id="prepareBtn"
                             class="mt-auto w-full bg-primary text-on-primary py-3 rounded font-data-md font-bold hover:bg-primary-fixed-dim transition-colors shadow-[0_0_15px_rgba(208,255,220,0.2)]">
-                            Prepare Calldata
+                            Prepare &amp; Sign
                         </button>
+                        <div id="bridgeTransfers" class="hidden border border-outline-variant/30 rounded p-3 space-y-2">
+                            <div class="flex items-center justify-between text-label-sm font-label-sm">
+                                <span class="text-on-surface-variant">Recent bridge</span>
+                                <button id="refreshTransfersBtn" type="button" class="text-primary hover:text-primary-fixed-dim">Refresh</button>
+                            </div>
+                            <div id="bridgeTransfersBody" class="space-y-2"></div>
+                        </div>
                     </div>
                 </div>
                 <!-- BOTTOM ROW -->
@@ -704,6 +714,7 @@
         </div>
     </div>
 
+    <script src="/wallet.js"></script>
     <script src="/portfolio.js"></script>
 </body>
 

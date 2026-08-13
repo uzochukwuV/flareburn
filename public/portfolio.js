@@ -1,5 +1,5 @@
 // Omnichain FXRP portfolio dashboard frontend.
-// Read-only data binding + bridge calldata preparation. No key handling.
+// Live data binding plus wallet-prompted bridge execution. No private key handling.
 // Wallet connection: MetaMask/EVM via window.ethereum (EIP-1193). Xaman is a stub.
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +12,8 @@ const state = {
   executor: null,
   address: "",
   walletType: null, // "evm" | "manual"
+  connectedChainId: null,
+  useTestnet: null,
   pollTimer: null,
 };
 
@@ -49,13 +51,13 @@ async function fetchWithRetry(path, opts, retries = 3) {
 
 const API = {
   status: () => apiGet("/status", { key: "status", ttl: CACHE_TTL.status }),
-  chains: () => apiGet("/chains", { ttl: CACHE_TTL.chains }),
-  portfolio: (addr) => fetchWithRetry(`/portfolio?address=${encodeURIComponent(addr)}`),
+  chains: () => apiGet(withMode("/chains"), { ttl: CACHE_TTL.chains, key: `chains:${modeKey()}` }),
+  portfolio: (addr) => fetchWithRetry(withMode(`/portfolio?address=${encodeURIComponent(addr)}`)),
   ftsoPrice: () => fetchWithRetry("/ftso-price"),
-  reserves: () => apiGet("/reserves", { ttl: CACHE_TTL.reserves }),
+  reserves: () => apiGet(withMode("/reserves"), { ttl: CACHE_TTL.reserves, key: `reserves:${modeKey()}` }),
   executor: () => apiGet("/executor-status", { ttl: CACHE_TTL.executor }),
   bridgePrepare: (body) =>
-    fetchJson("/bridge-prepare", {
+    fetchJson(withMode("/bridge-prepare"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -86,6 +88,37 @@ const API = {
       body: JSON.stringify(body),
     }),
 };
+
+const BRIDGE_STORAGE_KEY = "fxrp_bridge_transfers";
+const BRIDGE_POLL_INTERVAL = 20_000;
+function readBridgeTransfers() { try { const value = JSON.parse(localStorage.getItem(BRIDGE_STORAGE_KEY) || "[]"); return Array.isArray(value) ? value.filter((item) => item && item.sendTx) : []; } catch { return []; } }
+function saveBridgeTransfers() { state.bridgeTransfers = state.bridgeTransfers.slice(-10); localStorage.setItem(BRIDGE_STORAGE_KEY, JSON.stringify(state.bridgeTransfers)); }
+function bridgeScanBase(transfer) { return (transfer?.testnet ?? state.useTestnet) ? "https://scan-testnet.layerzero-api.com/v1" : "https://scan.layerzero-api.com/v1"; }
+function bridgeStatusLabel(status) { return status === "completed" ? "Delivered" : status === "failed" ? "Failed" : "Pending delivery"; }
+function renderBridgeTransfers() {
+  const panel = $("bridgeTransfers"); const body = $("bridgeTransfersBody"); if (!panel || !body) return;
+  const transfers = state.bridgeTransfers.slice().reverse().slice(0, 3); panel.classList.toggle("hidden", transfers.length === 0); body.replaceChildren();
+  for (const transfer of transfers) {
+    const row = document.createElement("div"); row.className = "flex items-center justify-between gap-3 text-label-sm font-label-sm";
+    const details = document.createElement("div"); details.className = "min-w-0";
+    const route = document.createElement("div"); route.className = "text-on-surface"; route.textContent = transfer.amount + " FXRP ? " + transfer.srcName + " ? " + transfer.dstName;
+    const hash = document.createElement("div"); hash.className = "text-on-surface-variant truncate font-mono"; hash.textContent = transfer.sendTx.slice(0, 10) + "?" + transfer.sendTx.slice(-8);
+    details.append(route, hash); const status = document.createElement("span"); status.className = transfer.status === "completed" ? "text-primary shrink-0" : transfer.status === "failed" ? "text-error shrink-0" : "text-secondary shrink-0"; status.textContent = bridgeStatusLabel(transfer.status); row.append(details, status); body.append(row);
+  }
+}
+async function pollBridgeTransfer(transfer) {
+  try {
+    const response = await fetch(bridgeScanBase(transfer) + "/messages/tx/" + transfer.sendTx); if (!response.ok) return;
+    const message = (await response.json()).data?.[0]; if (!message) return;
+    const statuses = [message.status, message.source?.status, message.destination?.status].filter(Boolean).map((value) => String(value).toUpperCase());
+    if (statuses.some((value) => ["FAILED", "ERROR", "SIMULATION_REVERTED"].includes(value))) transfer.status = "failed";
+    else if (message.destination?.tx?.txHash || statuses.some((value) => ["DELIVERED", "SUCCEEDED", "SUCCESS"].includes(value))) { transfer.status = "completed"; transfer.destinationTx = message.destination?.tx?.txHash || transfer.destinationTx || ""; }
+    else transfer.status = "pending";
+    transfer.updatedAt = Date.now();
+  } catch { /* Keep last known state while the scan API is unavailable. */ }
+}
+async function pollBridgeTransfers() { const pending = state.bridgeTransfers.filter((transfer) => transfer.status === "pending"); if (!pending.length) { renderBridgeTransfers(); return; } await Promise.all(pending.map(pollBridgeTransfer)); saveBridgeTransfers(); renderBridgeTransfers(); }
+function startBridgePolling() { state.bridgeTransfers = readBridgeTransfers(); renderBridgeTransfers(); pollBridgeTransfers(); clearInterval(state.bridgePollTimer); state.bridgePollTimer = setInterval(pollBridgeTransfers, BRIDGE_POLL_INTERVAL); }
 
 // ============ Format layer ============
 
@@ -125,6 +158,82 @@ function showResult(title, body) {
 // ============ Wallet connection ============
 
 const EVM_HEX = /^0x[a-fA-F0-9]{40}$/;
+const COSTON2_CHAIN_ID = 114;
+const TESTNET_CHAIN_IDS = new Set([16, 114, 998]);
+const COSTON2_CHAIN = {
+  id: "coston2",
+  name: "Flare Coston2",
+  chainId: COSTON2_CHAIN_ID,
+  rpc: "https://coston2-api.flare.network/ext/C/rpc",
+  explorer: "https://coston2.totlescan.com",
+  nativeSymbol: "CFLR",
+};
+const MAINNET_CHAIN = {
+  id: "flare",
+  name: "Flare",
+  chainId: 14,
+  rpc: "https://flare-api.flare.network/ext/C/rpc",
+  explorer: "https://flarescan.com",
+  nativeSymbol: "FLR",
+};
+
+function modeKey() {
+  return state.useTestnet == null ? "default" : state.useTestnet ? "testnet" : "mainnet";
+}
+
+function withMode(path) {
+  if (state.useTestnet == null) return path;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}testnet=${state.useTestnet ? "true" : "false"}`;
+}
+
+function hexChainIdToNumber(hex) {
+  return Number.parseInt(hex, 16);
+}
+
+async function getConnectedChainId() {
+  if (!window.ethereum) return null;
+  const chainIdHex = await window.ethereum.request({ method: "eth_chainId" });
+  return hexChainIdToNumber(chainIdHex);
+}
+
+async function syncModeFromWalletChain() {
+  if (!window.ethereum || state.walletType !== "evm") return false;
+  const chainId = await getConnectedChainId();
+  state.connectedChainId = chainId;
+  const nextUseTestnet = TESTNET_CHAIN_IDS.has(chainId);
+  const changed = state.useTestnet !== nextUseTestnet;
+  state.useTestnet = nextUseTestnet;
+  updateNetworkBadge();
+  return changed;
+}
+
+function updateNetworkBadge() {
+  const label = state.useTestnet ? (state.connectedChainId === COSTON2_CHAIN_ID ? "Coston2 testnet" : "testnet") : "mainnet";
+  $("networkBadge").textContent = state.connectedChainId ? label + " | chain " + state.connectedChainId : label;
+  const switchBtn = $("switchChainBtn");
+  if (switchBtn) {
+    const switchingToTestnet = !state.useTestnet;
+    const shouldShow = state.walletType === "evm" && (switchingToTestnet
+      ? state.connectedChainId !== COSTON2_CHAIN_ID
+      : state.connectedChainId !== MAINNET_CHAIN.chainId);
+    switchBtn.classList.toggle("hidden", !shouldShow);
+    switchBtn.querySelector("span:last-child").textContent = switchingToTestnet
+      ? "Switch to Coston2"
+      : "Switch to Flare Mainnet";
+  }
+}
+
+async function reloadChainData() {
+  const chainsData = await API.chains();
+  state.useTestnet = chainsData.useTestnet;
+  state.chains = chainsData.chains;
+  $("bridgeSrc").innerHTML = "";
+  $("bridgeDst").innerHTML = "";
+  updateNetworkBadge();
+  setBridgeWidget();
+  setChainTable();
+}
 
 async function connectMetaMask() {
   if (!window.ethereum) {
@@ -138,8 +247,10 @@ async function connectMetaMask() {
     if (!EVM_HEX.test(addr)) throw new Error("Invalid address");
     state.address = addr;
     state.walletType = "evm";
-    persistWallet();
+    window.WalletStore.setEvm(addr, "metamask");
+    await syncModeFromWalletChain();
     setupEvmListeners();
+    updateNetworkBadge();
     toast(`Connected ${Format.shortAddr(addr)}`, "check_circle");
     return addr;
   } catch (e) {
@@ -156,45 +267,66 @@ function setupEvmListeners() {
       disconnectWallet();
     } else {
       state.address = accounts[0].toLowerCase();
-      persistWallet();
-      updateWalletUI();
-      loadPortfolioData();
+      window.WalletStore.setEvm(state.address, "metamask");
+      syncModeFromWalletChain().then(async (changed) => {
+        if (changed) {
+          state.portfolio = null;
+          await reloadChainData();
+          await loadSystemData();
+        }
+        updateWalletUI();
+        loadPortfolioData();
+      });
     }
+  });
+  window.ethereum.removeAllListeners?.("chainChanged");
+  window.ethereum.on?.("chainChanged", async () => {
+    const changed = await syncModeFromWalletChain();
+    if (changed) {
+      state.portfolio = null;
+      await reloadChainData();
+      await loadSystemData();
+    }
+    if (state.address) loadPortfolioData();
+    updateNetworkBadge();
   });
 }
 
 function persistWallet() {
-  if (state.walletType === "evm") {
-    try { localStorage.setItem("fxrp_wallet", JSON.stringify({ type: "evm" })); } catch {}
-  }
+  // Wallet persistence now handled by WalletStore
+  // This function kept for backward compatibility
 }
 
 function loadPersistedWallet() {
-  try {
-    const w = JSON.parse(localStorage.getItem("fxrp_wallet") || "{}");
-    if (w.type === "evm" && window.ethereum) {
-      // Eagerly request without popup: only reconnect if already authorized
-      window.ethereum
-        .request({ method: "eth_accounts" })
-        .then((accounts) => {
-          if (accounts && accounts.length) {
-            state.address = accounts[0].toLowerCase();
-            state.walletType = "evm";
-            setupEvmListeners();
-            updateWalletUI();
-            loadPortfolioData();
-          }
-        })
-        .catch(() => {});
-    }
-  } catch {}
+  // Load from centralized WalletStore if available
+  const persisted = window.WalletStore?.getEvm?.();
+  if (persisted && window.ethereum) {
+    // Eagerly request without popup: only reconnect if already authorized
+    window.ethereum
+      .request({ method: "eth_accounts" })
+      .then(async (accounts) => {
+        if (accounts && accounts.length) {
+          const addr = accounts[0].toLowerCase();
+          state.address = addr;
+          state.walletType = "evm";
+          window.WalletStore.setEvm(addr, "metamask");
+          await syncModeFromWalletChain();
+          setupEvmListeners();
+          await reloadChainData();
+          updateWalletUI();
+          loadPortfolioData();
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 function disconnectWallet() {
   state.address = "";
   state.walletType = null;
+  state.connectedChainId = null;
   state.portfolio = null;
-  try { localStorage.removeItem("fxrp_wallet"); } catch {}
+  window.WalletStore?.clearEvm?.();
   updateWalletUI();
   resetPortfolioUI();
   toast("Disconnected", "logout");
@@ -488,34 +620,94 @@ async function updateRoute() {
   }
 }
 
+async function signBridgeTransaction(call, from) {
+  return window.ethereum.request({
+    method: "eth_sendTransaction",
+    params: [{
+      from,
+      to: call.to,
+      value: "0x" + BigInt(call.value || 0).toString(16),
+      data: call.data,
+    }],
+  });
+}
+
+async function switchToChain(chain) {
+  if (!window.ethereum) throw new Error("MetaMask not installed");
+  const chainIdHex = "0x" + Number(chain.chainId).toString(16);
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: chainIdHex }],
+    });
+  } catch (e) {
+    if (e.code !== 4902) throw e;
+    await window.ethereum.request({
+      method: "wallet_addEthereumChain",
+      params: [{
+        chainId: chainIdHex,
+        chainName: chain.name,
+        nativeCurrency: { name: chain.nativeSymbol, symbol: chain.nativeSymbol, decimals: 18 },
+        rpcUrls: [chain.rpc].filter(Boolean),
+        blockExplorerUrls: [chain.explorer].filter(Boolean),
+      }],
+    });
+  }
+  state.connectedChainId = await getConnectedChainId();
+  state.useTestnet = TESTNET_CHAIN_IDS.has(state.connectedChainId);
+  updateNetworkBadge();
+}
+
+async function ensureWalletOnSourceChain(srcChain) {
+  if (!window.ethereum) throw new Error("MetaMask not installed");
+  const current = await getConnectedChainId();
+  state.connectedChainId = current;
+  if (current === srcChain.chainId) return;
+  await switchToChain(srcChain);
+}
+
 async function prepareCalldata() {
   const amount = $("bridgeAmount").value.trim();
   const src = $("bridgeSrc").value;
   const dst = $("bridgeDst").value;
   if (!amount) { toast("Enter an amount", "error"); return; }
   if (!state.address) { toast("Connect a wallet first", "error"); return; }
+  if (state.walletType !== "evm" || !window.ethereum) { toast("Connect MetaMask to sign the bridge transaction", "error"); return; }
   if (src === dst) { toast("Source and destination must differ", "error"); return; }
   $("prepareBtn").disabled = true;
-  $("prepareBtn").textContent = "Preparing…";
+  $("prepareBtn").textContent = "Preparing...";
   try {
     const data = await API.bridgePrepare({
       srcChain: src, dstChain: dst, amount, recipient: state.address,
     });
-    const calls = data.calls
-      .map((c, i) => {
-        const label = i === 0 ? "1. Approve OFT" : "2. Send via LayerZero";
-        return `${label}\n  to:   ${c.to}\n  value: ${c.value} wei${i === 1 ? " (native LZ fee)" : ""}\n  data:  ${c.data}`;
-      })
-      .join("\n\n");
+    const srcChain = state.chains.find((c) => c.id === src);
+    if (!srcChain) throw new Error("Unknown source chain");
+    await ensureWalletOnSourceChain(srcChain);
+    $("prepareBtn").textContent = "Approve 1/2...";
+    const approveHash = await signBridgeTransaction(data.calls[0], state.address);
+    $("prepareBtn").textContent = "Send 2/2...";
+    const sendHash = await signBridgeTransaction(data.calls[1], state.address);
     showResult(
-      `Bridge: ${data.srcChain.name} → ${data.dstChain.name}`,
-      `Amount: ${data.amount} FXRP\nRecipient: ${data.recipient}\n\n${calls}\n\nNote: ${data.note}`,
+      `Bridge submitted: ${data.srcChain.name} -> ${data.dstChain.name}`,
+      {
+        amount: data.amount,
+        recipient: data.recipient,
+        approveTx: approveHash,
+        sendTx: sendHash,
+        note: "Transactions were submitted from your connected wallet. Track final delivery in the source and destination explorers.",
+      },
     );
+    toast("Bridge transactions submitted", "check_circle");
+    state.bridgeTransfers.push({ amount: data.amount, recipient: data.recipient, srcName: data.srcChain.name, dstName: data.dstChain.name, srcChain: data.srcChain.id, dstChain: data.dstChain.id, testnet: state.useTestnet, approveTx: approveHash, sendTx: sendHash, status: "pending", createdAt: Date.now() });
+    saveBridgeTransfers();
+    renderBridgeTransfers();
+    pollBridgeTransfers();
+    loadPortfolioData();
   } catch (e) {
     showResult("Bridge error", e.message);
   } finally {
     $("prepareBtn").disabled = false;
-    $("prepareBtn").textContent = "Prepare Calldata";
+    $("prepareBtn").textContent = "Prepare & Sign";
   }
 }
 
@@ -799,6 +991,20 @@ async function init() {
     toast("Address copied", "content_copy");
   });
   $("disconnectBtn").addEventListener("click", disconnectWallet);
+  $("switchChainBtn").addEventListener("click", async () => {
+    const button = $("switchChainBtn");
+    const targetChain = state.useTestnet ? MAINNET_CHAIN : COSTON2_CHAIN;
+    button.disabled = true;
+    try {
+      await switchToChain(targetChain);
+      toast(`Switched to ${targetChain.name}. Reloading portfolio...`, "check_circle");
+      window.location.reload();
+    } catch (e) {
+      toast(`Chain switch failed: ${e.message}`, "error");
+    } finally {
+      button.disabled = false;
+    }
+  });
   $("closeResultModal").addEventListener("click", () => $("resultModal").classList.add("hidden"));
   $("copyResultBtn").addEventListener("click", () => {
     navigator.clipboard?.writeText($("resultBody").textContent);
@@ -845,6 +1051,7 @@ async function init() {
     scheduleRouteUpdate();
   });
   $("prepareBtn").addEventListener("click", prepareCalldata);
+  $("refreshTransfersBtn").addEventListener("click", pollBridgeTransfers);
 
   // Tab toggle (Bridge active; Redeem links to gateway dashboard for now)
   $("tabRedeem").addEventListener("click", () => {
@@ -873,8 +1080,9 @@ async function init() {
   // Load chains + status first
   try {
     const [chainsData, status] = await Promise.all([API.chains(), API.status()]);
+    state.useTestnet = chainsData.useTestnet;
     state.chains = chainsData.chains;
-    $("networkBadge").textContent = chainsData.useTestnet ? "testnet" : status.network || "mainnet";
+    updateNetworkBadge();
     setBridgeWidget();
     setChainTable();
   } catch (e) {
@@ -886,6 +1094,9 @@ async function init() {
 
   // Reconnect EVM wallet if previously authorized (no popup)
   loadPersistedWallet();
+
+  // Restore and monitor bridge deliveries across page reloads
+  startBridgePolling();
 
   // Periodic refresh of system data (price/reserves/executor)
   state.pollTimer = setInterval(loadSystemData, 60_000);

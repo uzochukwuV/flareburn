@@ -16,6 +16,9 @@
 import express, { type Request, type Response } from "express";
 import { z } from "zod";
 import { ethers } from "ethers";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { FlareClient, type NetworkName, NETWORKS } from "../lib/flare-client.js";
 import {
   buildApproveCall,
@@ -66,10 +69,21 @@ const app = express();
 app.use(express.json());
 
 // Serve the frontend.
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use(express.static(path.join(__dirname, "..", "public")));
+const publicDir = [
+  path.resolve(process.cwd(), "public"),
+  path.join(__dirname, "..", "public"),
+  path.join(__dirname, "..", "..", "public"),
+].find((candidate) => existsSync(path.join(candidate, "index.html")));
+
+if (!publicDir) {
+  throw new Error("Could not find public/index.html. Start the server from the project root or include public assets with the build.");
+}
+
+app.use(express.static(publicDir));
+app.get("/", (_req: Request, res: Response) => res.sendFile(path.join(publicDir, "index.html")));
+app.get("/gateway", (_req: Request, res: Response) => res.sendFile(path.join(publicDir, "gateway.html")));
+app.get("/dashboard", (_req: Request, res: Response) => res.sendFile(path.join(publicDir, "dashboard.html")));
 
 
 /** Resolve a contract address once at startup so later calls are cached. */
@@ -466,12 +480,19 @@ const USE_TESTNET = process.env.CROSSCHAIN_TESTNET === "true";
 /** Whether the gateway itself runs on a testnet (drives bridge action chain selection). */
 const GATEWAY_TESTNET = NETWORK === "coston2" || NETWORK === "coston";
 
-app.get("/chains", (_req: Request, res: Response) => {
+function dashboardUseTestnet(value: unknown): boolean {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return USE_TESTNET;
+}
+
+app.get("/chains", (req: Request, res: Response) => {
+  const useTestnet = dashboardUseTestnet(req.query.testnet);
   res.json({
-    useTestnet: USE_TESTNET,
+    useTestnet,
     gatewayTestnet: GATEWAY_TESTNET,
     fxrpDecimals: 6,
-    chains: getChains(USE_TESTNET).map((c) => ({
+    chains: getChains(useTestnet).map((c) => ({
       id: c.id,
       name: c.name,
       chainId: c.chainId,
@@ -482,6 +503,7 @@ app.get("/chains", (_req: Request, res: Response) => {
       nativeSymbol: c.nativeSymbol,
       logoColor: c.logoColor,
       explorer: c.explorer,
+      rpc: c.rpc,
     })),
   });
 });
@@ -511,9 +533,10 @@ app.get("/portfolio", async (req: Request, res: Response) => {
     res.status(400).json({ error: "address (0x...) required", detail: parsed.error.format() });
     return;
   }
+  const useTestnet = dashboardUseTestnet(req.query.testnet);
   try {
-    const portfolio = await getPortfolio(parsed.data.address, USE_TESTNET);
-    res.json(portfolio);
+    const portfolio = await getPortfolio(parsed.data.address, useTestnet);
+    res.json({ ...portfolio, useTestnet });
   } catch (err) {
     res.status(502).json({ error: (err as Error).message });
   }
@@ -533,10 +556,11 @@ app.post("/bridge-prepare", async (req: Request, res: Response) => {
     return;
   }
   const { srcChain, dstChain, amount, recipient } = parsed.data;
-  const src = getChain(srcChain, USE_TESTNET);
-  const dst = getChain(dstChain, USE_TESTNET);
+  const useTestnet = dashboardUseTestnet(req.query.testnet);
+  const src = getChain(srcChain, useTestnet);
+  const dst = getChain(dstChain, useTestnet);
   if (!src || !dst) {
-    res.status(400).json({ error: `Unknown chain. Available: ${getChains(USE_TESTNET).map((c) => c.id).join(", ")}` });
+    res.status(400).json({ error: `Unknown chain. Available: ${getChains(useTestnet).map((c) => c.id).join(", ")}` });
     return;
   }
   if (src.id === dst.id) {
@@ -548,6 +572,7 @@ app.post("/bridge-prepare", async (req: Request, res: Response) => {
     res.json({
       srcChain: { id: src.id, name: src.name, lzEid: src.lzEid },
       dstChain: { id: dst.id, name: dst.name, lzEid: dst.lzEid },
+      useTestnet,
       amount,
       recipient,
       quote: {
@@ -788,9 +813,10 @@ app.post("/prepare-gasless-redeem", async (req: Request, res: Response) => {
 
 // --- proof of reserves -----------------------------------------------------
 
-app.get("/reserves", async (_req: Request, res: Response) => {
+app.get("/reserves", async (req: Request, res: Response) => {
+  const useTestnet = dashboardUseTestnet(req.query.testnet);
   try {
-    const data = await computeProofOfReserves(flare, USE_TESTNET);
+    const data = await computeProofOfReserves(flare, useTestnet);
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: (err as Error).message });
