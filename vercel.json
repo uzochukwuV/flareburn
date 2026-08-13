@@ -1,15 +1,23 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "devCommand": "npm run app",
   "installCommand": "npm install",
   "builds": [
     {
-      "src": "app.ts",
-      "use": "@vercel/node"
+      "src": "dist/app.js",
+      "use": "@vercel/node",
+      "config": {
+        "runtime": "nodejs22.x",
+        "includeFiles": [
+          "public/**"
+        ]
+      }
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "app.ts" }
+    {
+      "src": "/(.*)",
+      "dest": "dist/app.js"
+    }
   ]
 }
